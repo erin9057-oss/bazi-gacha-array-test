@@ -7,6 +7,63 @@ if (typeof marked === 'undefined') {
     document.head.appendChild(script);
 }
 
+// ================== 全局变量：省市区与游戏知识库 ==================
+let pcaData = {};
+const SPECIAL_PROVS = ["香港特别行政区", "澳门特别行政区", "台湾"];
+const OTHER_KEY = "海外及其他地区";
+
+const GameDatabase = [
+  {
+    name: "恋与深空", keywords: ["恋与深空", "深空"],
+    desc: "一款近未来幻想的3D乙女恋爱手游，提供高沉浸互动体验。主控为女性猎人小姐。五星卡分为日卡和月卡，日卡为两张一套，必须抽齐一套才有用，满150抽会送一张用户可自选两张中任意一张；月卡就是单张，和其他游戏相同。",
+    characters: [
+      { name: "沈星回", info: "生日：10月16日，EVOL属性：光" },
+      { name: "黎深", info: "生日：9月5日，EVOL属性：冰" },
+      { name: "祁煜", info: "生日：3月6日，EVOL属性：火" },
+      { name: "秦彻", info: "生日：4月18日，EVOL属性：能量操控" },
+      { name: "夏以昼", info: "生日：6月13日，EVOL属性：引力" }
+    ]
+  },
+  {
+    name: "世界之外", keywords: ["世界之外", "世外"],
+    desc: "网易开发的无限流言情手游。女性玩家扮演不同角色于副本中完成任务，体验超越现实的甜蜜爱恋。",
+    characters: [
+      { name: "顾时夜", info: "生日：11月22日" },
+      { name: "易遇", info: "生日：12月31日" },
+      { name: "柏源", info: "生日：4月15日" },
+      { name: "夏萧因", info: "生日：9月10日" }
+    ]
+  },
+  {
+    name: "无限暖暖", keywords: ["无限暖暖", "暖暖"],
+    desc: "暖暖系列第五代作品，一款多平台开放世界换装冒险游戏，玩家将与大喵在奇迹大陆探索解谜。注：本游戏不抽卡，抽四星阁/五星阁。为服装部件，四星阁5抽保底一件，五星阁20抽保底一件，整套多为8-11件，满进化需抽2套。本游戏不会歪常驻服装。",
+    characters: [
+      { name: "苏暖暖", info: "生日：12月6日" },
+      { name: "暖暖", info: "生日：12月6日" }
+    ]
+  }
+];
+
+function extractGameContext(wishText) {
+  let injectedContext = "";
+  GameDatabase.forEach(game => {
+    let isGameMentioned = game.keywords.some(kw => wishText.includes(kw));
+    let mentionedChars = game.characters.filter(c => wishText.includes(c.name));
+    if (isGameMentioned || mentionedChars.length > 0) {
+      injectedContext += `\n【系统注入补充资料：${game.name}】\n游戏简介：${game.desc}\n相关角色信息：\n`;
+      let printedInfos = new Set();
+      let targetChars = (isGameMentioned && mentionedChars.length === 0) ? game.characters : mentionedChars;
+      targetChars.forEach(c => {
+        if (!printedInfos.has(c.info)) {
+          injectedContext += `- ${c.name}: ${c.info}\n`;
+          printedInfos.add(c.info);
+        }
+      });
+    }
+  });
+  return injectedContext;
+}
+
 // ================== 前端 64卦 硬核映射表 ==================
 const hexagramMap = {
     "111111":"乾为天", "000000":"坤为地", "100010":"水雷屯", "010001":"山水蒙", "111010":"水天需", "010111":"天水讼", "010000":"地水师", "000010":"水地比", "111011":"风天小畜", "110111":"天泽履", "111000":"地天泰", "000111":"天地否", "101111":"天火同人", "111101":"火天大有", "001000":"地山谦", "000100":"雷地豫", "100110":"泽雷随", "011001":"山风蛊", "110000":"地泽临", "000011":"风地观", "100101":"火雷噬嗑", "101001":"山火贲", "000001":"山地剥", "100000":"地雷复", "100111":"天雷无妄", "111001":"山天大畜", "100001":"山雷颐", "011110":"泽风大过", "010010":"坎为水", "101101":"离为火", "001110":"泽山咸", "011100":"雷风恒", "001111":"天山遁", "111100":"雷天大壮", "000101":"火地晋", "101000":"地火明夷", "101011":"风火家人", "110101":"火泽睽", "001010":"水山蹇", "010100":"雷水解", "110001":"山泽损", "100011":"风雷益", "111110":"泽天夬", "011111":"天风姤", "000110":"泽地萃", "011000":"地风升", "010110":"泽水困", "011010":"水风井", "101110":"泽火革", "011101":"火风鼎", "100100":"震为雷", "001001":"艮为山", "001011":"风山渐", "110100":"雷泽归妹", "101100":"雷火丰", "001101":"火山旅", "011011":"巽为风", "110110":"兑为泽", "010011":"风水涣", "110010":"水泽节", "110011":"风泽中孚", "001100":"雷山小过", "101010":"水火既济", "010101":"火水未济"
@@ -36,6 +93,52 @@ function appendToChatInput(text) {
     } catch (err) {
         console.error("追加输入框报错:", err);
     }
+}
+
+// ================== 省市区联动相关函数 ==================
+function setupLocationGroup(prefix) {
+    const group = $(`#${prefix}-group`);
+    const provSelect = group.find('.prov');
+    provSelect.empty().append('<option value="">请选择省份</option>');
+    for (let prov in pcaData) provSelect.append(new Option(prov, prov));
+    
+    provSelect.on('change', () => updateCity(prefix));
+    group.find('.city').on('change', () => updateDist(prefix));
+}
+
+function updateCity(prefix) {
+    const group = $(`#${prefix}-group`);
+    const prov = group.find('.prov').val();
+    const citySelect = group.find('.city').empty().append('<option value="">请选择城市</option>');
+    const distSelect = group.find('.dist').empty().append('<option value="">请选择区县</option>');
+    const otherInput = group.find('.other');
+    
+    if (!prov) { citySelect.show(); distSelect.show(); otherInput.hide(); return; }
+    if (prov === OTHER_KEY) { citySelect.hide(); distSelect.hide(); otherInput.show(); }
+    else if (SPECIAL_PROVS.includes(prov) || pcaData[prov] === "special") { citySelect.hide(); distSelect.hide(); otherInput.hide(); }
+    else {
+        citySelect.show(); distSelect.show(); otherInput.hide();
+        for (let c in pcaData[prov]) citySelect.append(new Option(c, c));
+    }
+}
+
+function updateDist(prefix) {
+    const group = $(`#${prefix}-group`);
+    const prov = group.find('.prov').val();
+    const city = group.find('.city').val();
+    const distSelect = group.find('.dist').empty().append('<option value="">请选择区县</option>');
+    if(city && pcaData[prov] && pcaData[prov][city]) {
+        pcaData[prov][city].forEach(d => distSelect.append(new Option(d, d)));
+    }
+}
+
+function getLocationString(prefix) {
+    const group = $(`#${prefix}-group`);
+    const prov = group.find('.prov').val();
+    if (!prov) return "";
+    if (prov === OTHER_KEY) return group.find('.other').val().trim();
+    if (SPECIAL_PROVS.includes(prov)) return prov;
+    return `${prov}${group.find('.city').val()}${group.find('.dist').val()}`;
 }
 
 window.sendRpgRequest = (actionType) => executeDivination('rpg', actionType);
@@ -117,6 +220,30 @@ jQuery(async () => {
 
     $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
     $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
+    if(localStorage.getItem('bazi_gender')) $('#bazi_gender').val(localStorage.getItem('bazi_gender'));
+    if(localStorage.getItem('bazi_birthday')) $('#bazi_birthday').val(localStorage.getItem('bazi_birthday'));
+
+    // 🟢 加载省市区 JSON 数据
+    try {
+        const res = await fetch('https://cdn.jsdelivr.net/gh/modood/Administrative-divisions-of-China/dist/pca.json');
+        const rawData = await res.json();
+        let orderedData = {};
+        for (let prov in rawData) {
+            if (!SPECIAL_PROVS.includes(prov)) orderedData[prov] = rawData[prov];
+        }
+        SPECIAL_PROVS.forEach(sp => { orderedData[sp] = "special"; });
+        orderedData[OTHER_KEY] = "other";
+        pcaData = orderedData;
+        $('#bazi_birth-loading').text(""); 
+    } catch (e) {
+        pcaData = {}; 
+        SPECIAL_PROVS.forEach(sp => { pcaData[sp] = "special"; });
+        pcaData[OTHER_KEY] = "other";
+        $('#bazi_birth-loading').text("(离线)"); 
+    }
+
+    setupLocationGroup('bazi_birth');
+    setupLocationGroup('bazi_live');
     
     $('#bazi_castBtn').on('click', castLiuyao);
     $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
@@ -141,11 +268,63 @@ async function executeDivination(mode, actionType = null) {
     let systemPrompt = "";
     let userPrompt = "";
 
+    // 🟢 恢复了老版的 三次元完整校验、游戏知识库注入、以及详细的 prompt
     if (mode === 'real') {
         const wish = $('#bazi_wish_real').val().trim();
+        const gender = $('#bazi_gender').val();
+        const birthday = $('#bazi_birthday').val();
+        let birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "";
+        const birthPlace = getLocationString('bazi_birth');
+        const livePlace = getLocationString('bazi_live');
+
         if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
-        systemPrompt = `你现在是一个精通《周易》卦爻辞及八字命理的专业人员。\n【日期推演】当前日期：${todayStr}。请确立起始日期，若凶则在7日内另择吉日...`;
-        userPrompt = `阳历生日：${$('#bazi_birthday').val()}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
+        if(!birthday) return toastr.warning("请选择阳历生日！");
+        if(!birthPlace || !livePlace) return toastr.warning("请完整填写出生地和现居地！");
+        if(!birthTime) birthTime = "任选当天吉时";
+
+        localStorage.setItem('bazi_gender', gender);
+        localStorage.setItem('bazi_birthday', birthday);
+
+        const gameInfo = extractGameContext(wish);
+
+        systemPrompt = `你现在是一个精通《周易》卦爻辞及体用生克之法，且深谙中国传统八字命理的专业研究人员。你熟读穷通宝典、三命通会、滴天髓、渊海子平、千里命稿、协纪辨方书、果老星宗、子平真诠、神峰通考等一系列书籍。
+在传统命理的架构中，八字与六爻对应着宏观的“体”与微观的“用”。推演需严格遵循以下规则：
+第一，理清尺度：八字是先天定局加流年演播，定大势。六爻讲究“无事不占，不动不占”，捕捉起心动念瞬间的微观气运。
+第二，拒绝线性思维：绝不能因八字走财运，就判定用户其她所有博弈皆稳赢。若六爻显现财爻受克或兄弟劫财，依然会翻车。“八字决定能赢多少，六爻决定这一把输赢”。
+第三，必须严格遵循“先观命理之大势，再决行事之进退”的固定次序（先命后卜）。
+
+【日期推演】(最重要)
+当前现实日期是：${todayStr}。
+请在推演前，先根据用户的【愿望内容】确立“起始日期”：
+1. 若用户愿望中包含完整日期或相对时间（如明天、下周三、下个月某号），请以 ${todayStr} 为基准推算出具体的“起始日期”。
+2. 若用户愿望中未提及任何时间，则默认“起始日期”为 ${todayStr}（今天）。
+3. 如果起始日期的推演结果为“大忌(凶)”，你需要为用户另择吉日，择日范围必须限制在【起始日期】至【起始日期后7天】内。`;
+
+        userPrompt = `下面是要根据用户输入组合的信息：
+用户阳历生日是：${birthday}
+出生时间是：${birthTime}
+出生在：${birthPlace}
+现住：${livePlace}
+性别：${gender}。
+${gameInfo}
+愿望内容：【${wish}】
+
+【用户刚刚针对该愿望起的六爻金钱课结果】
+${liuyaoData}
+
+请你结合四柱八字大盘与上述已推算好的六爻本卦/变卦，根据你所熟读的书籍经验学习一下，具体在什么时间，在家里朝向哪方，口号什么的，根据常见谷子五行分类如何利用元素相关谷子摆阵，能让【${wish}】比较欧？
+
+【大师测算准则】
+1. 时辰和朝向必须反复测算。
+2. 口号必须结合愿望，避免生僻字，简洁好记。
+3. 如果遇到突发情况，请在总结中提供调整方案。
+
+请严格输出纯净 JSON，不要包含额外文本：
+{
+  "summary": "一句话总结（如：明日午时面朝东南大喊xx口号等）",
+  "hexagram_interpretation": "针对本卦与变卦的解读，简洁通俗易懂",
+  "details": "具体的执行步骤、详细解释（包括八字简析、时间、方位、阵法等详细内容）"
+}`;
     } 
     else if (mode === 'rpg') {
         let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
@@ -284,19 +463,15 @@ async function executeDivination(mode, actionType = null) {
                         toastr.success("💘 姻缘羁绊已通过基础接口写入并保存至角色卡描述中！");
                     } 
                     else {
-                        // 🛑 核心改动：如果还是找不到，直接将内部所有情况用 Alert 弹窗打印出来！
                         let debugLog = "【酒馆助手 API 追踪报告】\n\n";
                         debugLog += "1. window.TavernHelper 是否存在？ " + (typeof window.TavernHelper !== 'undefined') + "\n";
                         if (window.TavernHelper) {
                             const thKeys = Object.keys(window.TavernHelper).filter(k => k.toLowerCase().includes('char'));
                             debugLog += "2. TavernHelper 内包含的 Character 接口有：\n" + (thKeys.length ? thKeys.join(", ") : "无") + "\n";
                         }
-                        
                         const winKeys = Object.keys(window).filter(k => k.toLowerCase().includes('updatecharacter'));
                         debugLog += "\n3. 全局 window 是否有 updateCharacterWith？ " + (winKeys.length > 0 ? winKeys.join(", ") : "没有找到") + "\n";
-                        
                         debugLog += "\n4. globalThis 测试？ " + (typeof globalThis.updateCharacterWith) + "\n";
-                        
                         alert(debugLog);
                     }
                 } catch (charErr) {

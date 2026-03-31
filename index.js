@@ -1,5 +1,3 @@
-import { hexagramMap } from './hexagram_data.js';
-
 const extensionName = "bazi-gacha-array";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
@@ -13,11 +11,16 @@ let pcaData = {};
 const SPECIAL_PROVS = ["香港特别行政区", "澳门特别行政区", "台湾"];
 const OTHER_KEY = "海外及其他地区";
 
-// 游戏数据库保持不变...
+// ================== 前端 64卦 硬核映射表 ==================
+const hexagramMap = {
+  "111111":"乾为天", "000000":"坤为地", "100010":"水雷屯", "010001":"山水蒙", "111010":"水天需", "010111":"天水讼", "010000":"地水师", "000010":"水地比", "111011":"风天小畜", "110111":"天泽履", "111000":"地天泰", "000111":"天地否", "101111":"天火同人", "111101":"火天大有", "001000":"地山谦", "000100":"雷地豫", "100110":"泽雷随", "011001":"山风蛊", "110000":"地泽临", "000011":"风地观", "100101":"火雷噬嗑", "101001":"山火贲", "000001":"山地剥", "100000":"地雷复", "100111":"天雷无妄", "111001":"山天大畜", "100001":"山雷颐", "011110":"泽风大过", "010010":"坎为水", "101101":"离为火", "001110":"泽山咸", "011100":"雷风恒", "001111":"天山遁", "111100":"雷天大壮", "000101":"火地晋", "101000":"地火明夷", "101011":"风火家人", "110101":"火泽睽", "001010":"水山蹇", "010100":"雷水解", "110001":"山泽损", "100011":"风雷益", "111110":"泽天夬", "011111":"天风姤", "000110":"泽地萃", "011000":"地风升", "010110":"泽水困", "011010":"水风井", "101110":"泽火革", "011101":"火风鼎", "100100":"震为雷", "001001":"艮为山", "001011":"风山渐", "110100":"雷泽归妹", "101100":"雷火丰", "001101":"火山旅", "011011":"巽为风", "110110":"兑为泽", "010011":"风水涣", "110010":"水泽节", "110011":"风泽中孚", "001100":"雷山小过", "101010":"水火既济", "010101":"火水未济"
+};
+
+// ================== 本地游戏知识库 ==================
 const GameDatabase = [
-  { name: "恋与深空", keywords: ["恋与深空", "深空"], desc: "一款近未来幻想的3D乙女恋爱手游...五星卡满150抽会送一张用户可自选；月卡就是单张。", characters: [] },
-  { name: "世界之外", keywords: ["世界之外", "世外"], desc: "网易开发的无限流言情手游。", characters: [] },
-  { name: "无限暖暖", keywords: ["无限暖暖", "暖暖"], desc: "本游戏不抽卡，抽服装部件，四星阁5抽保底，五星阁20抽保底，不会歪常驻服装。", characters: [] }
+  { name: "恋与深空", keywords: ["恋与深空", "深空"], desc: "一款近未来幻想的3D乙女恋爱手游...五星卡分为日卡和月卡，日卡为两张一套，必须抽齐一套才有用，满150抽会送一张用户可自选两张中任意一张；月卡就是单张。", characters: [] },
+  { name: "世界之外", keywords: ["世界之外", "世外"], desc: "网易开发的无限流言情手游。女性玩家扮演不同角色于副本中完成任务，体验超越现实的甜蜜爱恋。", characters: [] },
+  { name: "无限暖暖", keywords: ["无限暖暖", "暖暖"], desc: "暖暖系列第五代作品，一款多平台开放世界换装冒险游戏。注：本游戏不抽卡，抽四星阁/五星阁。为服装部件，四星阁5抽保底一件，五星阁20抽保底一件，整套多为8-11件，满进化需抽2套。本游戏不会歪常驻服装。", characters: [] }
 ];
 
 function extractGameContext(wishText) {
@@ -35,11 +38,9 @@ function appendToChatInput(text) {
     const $chatInput = $('#send_textarea');
     if ($chatInput.length) {
         const currentVal = $chatInput.val();
-        const addition = `（${text}）`; // 使用括号包裹
-        // 拼接：如果有原文则换行加括号，没有则直接加括号
+        const addition = `（${text}）`; 
         $chatInput.val(currentVal ? currentVal + '\n' + addition : addition);
         
-        // 触发 input 事件，打通酒馆底层 React 的双向绑定和文本域自适应变高
         $chatInput[0].dispatchEvent(new Event('input', { bubbles: true }));
         $chatInput.trigger('input');
         $chatInput.focus();
@@ -52,6 +53,8 @@ function appendToChatInput(text) {
 
 // ================== 六爻起卦 ==================
 function castLiuyao() {
+  const wish = $('#bazi_wish_real').val().trim() || $('#bazi_rpg_extra_input').val().trim() || "未命名事项";
+
   $('#bazi_hexagram-lines-box').empty();
   $('#bazi_hexagram-display').show();
 
@@ -91,12 +94,10 @@ jQuery(async () => {
     const modalHtml = await $.get(`${extensionFolderPath}/bazi_modal.html`);
     $("body").append(modalHtml);
 
-    // 打开/关闭面板
     $("#bazi_open_modal_btn").on("click", () => $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast'));
     $("#bazi_modal_close").on("click", () => $("#bazi_modal_container").fadeOut('fast'));
     $("#bazi_modal_container").on("click", function(e) { if (e.target === this) $(this).fadeOut('fast'); });
 
-    // Tab 切换逻辑
     $('.bazi-tab-btn').on('click', function() {
         $('.bazi-tab-btn').removeClass('active');
         $(this).addClass('active');
@@ -104,7 +105,6 @@ jQuery(async () => {
         $('.bazi-tab-content').removeClass('active');
         $(`#${target}`).addClass('active');
         
-        // 动态显示隐藏“现实排盘”按钮
         if(target === 'tab-gua') {
             const isFromReal = $('.bazi-tab-btn[data-tab="tab-real"]').hasClass('last-visited');
             $('#bazi_sendBtn_Real').toggle(isFromReal);
@@ -119,13 +119,11 @@ jQuery(async () => {
     $('#bazi_use_st_api').on('change', () => $('#bazi_use_st_api').is(':checked') ? $('#bazi_custom_api_block').slideUp() : $('#bazi_custom_api_block').slideDown());
     if(!$('#bazi_use_st_api').is(':checked')) $('#bazi_custom_api_block').show();
 
-    // 恢复基础数据
     $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
     $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
     if(localStorage.getItem('bazi_gender')) $('#bazi_gender').val(localStorage.getItem('bazi_gender'));
     if(localStorage.getItem('bazi_birthday')) $('#bazi_birthday').val(localStorage.getItem('bazi_birthday'));
 
-    // 省市区初始化略 (保留之前逻辑，确保不崩)
     setupLocationGroup('bazi_birth'); setupLocationGroup('bazi_live');
 
     $('#bazi_castBtn').on('click', castLiuyao);
@@ -133,9 +131,8 @@ jQuery(async () => {
     window.sendRpgRequest = (actionType) => executeDivination('rpg', actionType);
 });
 
-// 省市区工具函数略 (和之前完全一样)
-function setupLocationGroup(prefix) { /* 需保留之前的空架子防报错 */ }
-function getLocationString(prefix) { return "未知地点"; } // 简写防崩，如果你有 pca.json 保留之前的函数体
+function setupLocationGroup(prefix) { }
+function getLocationString(prefix) { return "未知地点"; }
 
 // ================== 核心调度器 (通用 API 呼叫) ==================
 async function executeDivination(mode, actionType = null) {
@@ -146,7 +143,6 @@ async function executeDivination(mode, actionType = null) {
 
     if(!useStApi && (!apiUrl || !apiKey)) return toastr.warning("请在配置中填写 API，或勾选使用酒馆主 API！");
     if(!liuyaoData) {
-        // 如果没起卦，强制跳转到起卦页
         $('.bazi-tab-btn[data-tab="tab-gua"]').click();
         return toastr.warning("【警告】请先点击按钮抛掷三枚铜钱起卦！");
     }
@@ -158,7 +154,6 @@ async function executeDivination(mode, actionType = null) {
     let userPrompt = "";
 
     if (mode === 'real') {
-        // === 三次元排盘逻辑 ===
         const wish = $('#bazi_wish_real').val().trim();
         if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
         
@@ -166,14 +161,12 @@ async function executeDivination(mode, actionType = null) {
         userPrompt = `阳历生日：${$('#bazi_birthday').val()} 性别：${$('#bazi_gender').val()}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的阵法指导，包含 summary, hexagram_interpretation, details。`;
         
     } else if (mode === 'rpg') {
-        // === 跑团推演逻辑 ===
         const context = SillyTavern.getContext();
-        const charData = context.characters ? context.characters[context.characterId] : null;
+        const charData = context.characters && context.characterId ? context.characters[context.characterId] : null;
         const charDesc = charData ? charData.description : "未知角色";
         const charName = charData ? charData.name : "未知角色";
         const userDesc = context.user_persona || "普通人类";
         
-        // 抓取近期 5 楼聊天
         let chatHistory = "暂无近期对话。";
         if (context.chat && context.chat.length > 0) {
             chatHistory = context.chat.slice(-5).map(m => `${m.name}: ${m.mes}`).join('\n');
@@ -205,7 +198,6 @@ async function executeDivination(mode, actionType = null) {
 }`;
     }
 
-    // 强制切换到 Tab 4 显示 loading 状态
     $('.bazi-tab-btn[data-tab="tab-gua"]').click();
     $('#bazi_sendBtn_Real').prop('disabled', true);
     $('#bazi_summary-content, #bazi_hexagram-content, #bazi_details-content').html("灵力流转中...");
@@ -229,14 +221,12 @@ async function executeDivination(mode, actionType = null) {
         aiContentString = aiContentString.replace(/```json/gi, '').replace(/```/g, '').trim();
         const aiResult = JSON.parse(aiContentString);
         
-        $('#bazi_summary-content').html(marked.parse(aiResult.summary || ""));
-        $('#bazi_hexagram-content').html(marked.parse(aiResult.hexagram_interpretation || ""));
-        $('#bazi_details-content').html(marked.parse(aiResult.details || ""));
+        $('#bazi_summary-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.summary || "") : aiResult.summary);
+        $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
+        $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
 
-        // ======= RPG 模式独有：将 summary 填入输入框 =======
         if (mode === 'rpg' && aiResult.summary) {
             appendToChatInput(aiResult.summary);
-            // 推演完成后关闭面板，让玩家专心聊天
             $("#bazi_modal_container").fadeOut('fast');
         }
 

@@ -7,11 +7,17 @@ if (typeof marked === 'undefined') {
     document.head.appendChild(script);
 }
 
-// ================== 全局变量：省市区与游戏知识库 ==================
+// ================== 全局变量与状态 ==================
 let pcaData = {};
 const SPECIAL_PROVS = ["香港特别行政区", "澳门特别行政区", "台湾"];
 const OTHER_KEY = "海外及其他地区";
 
+// 用于记录从 Tab2 或 Tab3 传过来的待推演任务
+let pendingDivination = { mode: null, actionType: null };
+let baziInjectUninjector = null; 
+let isBaziEventInjected = false; 
+
+// ================== 本地游戏知识库 ==================
 const GameDatabase = [
   {
     name: "恋与深空", keywords: ["恋与深空", "深空"],
@@ -95,9 +101,10 @@ function appendToChatInput(text) {
     }
 }
 
-// ================== 省市区联动相关函数 ==================
+// ================== 省市区联动功能 ==================
 function setupLocationGroup(prefix) {
     const group = $(`#${prefix}-group`);
+    if(group.length === 0) return; // 如果UI还没加载不报错
     const provSelect = group.find('.prov');
     provSelect.empty().append('<option value="">请选择省份</option>');
     for (let prov in pcaData) provSelect.append(new Option(prov, prov));
@@ -134,6 +141,7 @@ function updateDist(prefix) {
 
 function getLocationString(prefix) {
     const group = $(`#${prefix}-group`);
+    if(group.length === 0) return "未知地区";
     const prov = group.find('.prov').val();
     if (!prov) return "";
     if (prov === OTHER_KEY) return group.find('.other').val().trim();
@@ -141,10 +149,8 @@ function getLocationString(prefix) {
     return `${prov}${group.find('.city').val()}${group.find('.dist').val()}`;
 }
 
-window.sendRpgRequest = (actionType) => executeDivination('rpg', actionType);
-
+// ================== 起卦引擎 ==================
 function castLiuyao() {
-    const wish = $('#bazi_wish_real').val().trim() || $('#bazi_rpg_extra_input').val().trim() || "未命名事项";
     $('#bazi_hexagram-lines-box').empty();
     $('#bazi_hexagram-display').show();
     const yaoNames = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"];
@@ -168,12 +174,46 @@ function castLiuyao() {
     $('#bazi_hexagram-title').text(`本卦：${benGua}  |  变卦：${bianGua}`);
     $('#bazi_hexagram-lines-box').html(visualHtml);
     $('#bazi_liuyaoResultData').val(`【前端推算结果】本卦：${benGua}，变卦：${bianGua}\n【抛掷明细】\n${resultsTextForAI}`);
-    $('#bazi_castBtn').text("☯️ 卦象已成 (点击可重新起卦)").css("background-color", "#8b0000");
+    $('#bazi_castBtn').text("☯️ 对卦象不满意？点击重新起卦").css("background-color", "#666");
 }
 
-let baziInjectUninjector = null; 
-let isBaziEventInjected = false; 
+// ================== 前置准备调度器 (绑定在Tab 2/3 的按钮上) ==================
+window.sendRpgRequest = (actionType) => prepareDivination('rpg', actionType);
 
+function prepareDivination(mode, actionType = null) {
+    // 1. 先进行表单校验
+    if (mode === 'real') {
+        const wish = $('#bazi_wish_real').val().trim();
+        const birthday = $('#bazi_birthday').val();
+        const birthPlace = getLocationString('bazi_birth');
+        const livePlace = getLocationString('bazi_live');
+
+        if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
+        if(!birthday) return toastr.warning("请选择阳历生日！");
+        if(!birthPlace || !livePlace) return toastr.warning("请完整填写出生地和现居地！");
+        
+        // 保存数据方便下次自动填充
+        localStorage.setItem('bazi_gender', $('#bazi_gender').val());
+        localStorage.setItem('bazi_birthday', birthday);
+    } else if (mode === 'rpg') {
+        const extraInput = $('#bazi_rpg_extra_input').val().trim();
+        if ((actionType === 'check' || actionType === 'other') && !extraInput) {
+            return toastr.warning("该玩法需要您先在文本框填写具体的行动意图或需求！");
+        }
+    }
+
+    // 2. 存入全局待执行任务
+    pendingDivination = { mode, actionType };
+
+    // 3. 后台起卦
+    castLiuyao();
+
+    // 4. 自动跳到 Tab 4
+    $('.bazi-tab-btn[data-tab="tab-gua"]').click();
+    toastr.success("☯️ 卦象已自动生成！请确认后点击【正式发送推演】交由AI结印。");
+}
+
+// ================== 系统初始化 ==================
 jQuery(async () => {
     try {
         const uiHtml = await $.get(`${extensionFolderPath}/bazi_ui.html`);
@@ -185,6 +225,7 @@ jQuery(async () => {
         return;
     }
 
+    // 阅后即焚防弹衣监听
     if (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) {
         SillyTavern.eventSource.on(SillyTavern.eventTypes.GENERATION_ENDED, async () => {
             if (baziInjectUninjector) {
@@ -245,22 +286,35 @@ jQuery(async () => {
     setupLocationGroup('bazi_birth');
     setupLocationGroup('bazi_live');
     
-    $('#bazi_castBtn').on('click', castLiuyao);
-    $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
+    // 🟢 按钮逻辑重新洗牌
+    $('#bazi_castBtn').on('click', castLiuyao); // 这是在Tab4点击重新抛掷的按钮
+
+    // 把原先 Tab2 的发送按钮变成“准备推演”按钮
+    $('#bazi_sendBtn_Real').text("☯️ 起卦并准备推演").off('click').on('click', () => prepareDivination('real'));
+
+    // 🟢 在 Tab4 动态注入一个全局统一的“正式发送推演”按钮 (无需你改 HTML！)
+    if ($('#bazi_executeBtn').length === 0) {
+        // 将执行按钮直接加在重新起卦按钮的后面
+        $('#bazi_castBtn').after('<button id="bazi_executeBtn" style="margin-left: 10px; background-color: #2e8b57; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;">🙏 正式向AI发送推演</button>');
+    }
+    $('#bazi_executeBtn').off('click').on('click', executePendingDivination);
 });
 
-// ================== 核心调度器 ==================
-async function executeDivination(mode, actionType = null) {
+// ================== 核心 AI 请求与分配调度器 ==================
+async function executePendingDivination() {
+    const { mode, actionType } = pendingDivination;
+
+    if (!mode) {
+        return toastr.warning("请先在 三次元 或 二次元 标签页填写需求并点击起卦！");
+    }
+
     const useStApi = $('#bazi_use_st_api').is(':checked');
     const apiUrl = $('#bazi_apiUrl').val().trim();
     const apiKey = $('#bazi_apiKey').val().trim();
     const liuyaoData = $('#bazi_liuyaoResultData').val();
 
     if(!useStApi && (!apiUrl || !apiKey)) return toastr.warning("请填写自定义 API，或勾选使用酒馆主 API！");
-    if(!liuyaoData) {
-        $('.bazi-tab-btn[data-tab="tab-gua"]').click(); 
-        return toastr.warning("【警告】请先点击按钮抛掷三枚铜钱起卦！");
-    }
+    if(!liuyaoData) return toastr.warning("【系统异常】未检测到卦象数据，请尝试重新起卦！");
 
     const todayDate = new Date();
     const todayStr = `${todayDate.getFullYear()}年${todayDate.getMonth() + 1}月${todayDate.getDate()}日`;
@@ -268,22 +322,14 @@ async function executeDivination(mode, actionType = null) {
     let systemPrompt = "";
     let userPrompt = "";
 
-    // 🟢 恢复了老版的 三次元完整校验、游戏知识库注入、以及详细的 prompt
+    // ============= Prompt 组装 =============
     if (mode === 'real') {
         const wish = $('#bazi_wish_real').val().trim();
         const gender = $('#bazi_gender').val();
         const birthday = $('#bazi_birthday').val();
-        let birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "";
+        let birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "任选当天吉时";
         const birthPlace = getLocationString('bazi_birth');
         const livePlace = getLocationString('bazi_live');
-
-        if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
-        if(!birthday) return toastr.warning("请选择阳历生日！");
-        if(!birthPlace || !livePlace) return toastr.warning("请完整填写出生地和现居地！");
-        if(!birthTime) birthTime = "任选当天吉时";
-
-        localStorage.setItem('bazi_gender', gender);
-        localStorage.setItem('bazi_birthday', birthday);
 
         const gameInfo = extractGameContext(wish);
 
@@ -344,7 +390,7 @@ ${liuyaoData}
                 }
             }
         } catch (ctxErr) {
-            console.warn("🔮 抓取酒馆上下文警告，已启用保底预设:", ctxErr);
+            console.warn("🔮 抓取酒馆上下文警告:", ctxErr);
         }
         
         const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
@@ -360,13 +406,15 @@ ${liuyaoData}
             taskDesc = "生成一个强烈的随机突发事件（如意外、第三者介入、环境异变），用于打破当前僵局。";
         } else if(actionType === 'radar') {
             taskDesc = "为用户寻找目标提供方位、五行元素相关的模糊但绝对有用的玄学雷达线索。";
+        } else if(actionType === 'other') {
+            taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于现实八字六爻与角色世界观给出合理的玄学解读。`;
         }
 
         userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（填入一句话判定或羁绊设定）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（填入详细的情境推演细节）"\n}`;
     }
 
-    $('.bazi-tab-btn[data-tab="tab-gua"]').click();
-    $('#bazi_sendBtn_Real').prop('disabled', true);
+    // ============= 发送请求 =============
+    $('#bazi_executeBtn').text("⏳ 灵力流转中...").prop('disabled', true);
     $('#bazi_summary-content, #bazi_hexagram-content, #bazi_details-content').html("灵力流转中...");
 
     try {
@@ -410,13 +458,19 @@ ${liuyaoData}
         $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
         $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
 
+        // ============= 后续动作分配 =============
         const fnUpdateCharacterWith = resolveApi('updateCharacterWith');
         const fnGetCharacter = resolveApi('getCharacter');
         const fnReplaceCharacter = resolveApi('replaceCharacter');
         const fnInjectPrompts = resolveApi('injectPrompts');
 
         if (mode === 'rpg' && aiResult.summary) {
-            if (actionType !== 'bond') {
+            // 🟢 针对 "其他玩法 (other)"：只展示不污染环境！
+            if (actionType === 'other') {
+                toastr.success("✅ 自由推演完成！结果已显示在面板中。");
+            } 
+            else if (actionType !== 'bond') {
+                // 原有动作逻辑
                 appendToChatInput(aiResult.summary);
                 if (aiResult.details) {
                     if (fnInjectPrompts) {
@@ -437,6 +491,7 @@ ${liuyaoData}
                     }
                 }
             } else {
+                // 羁绊逻辑（暂时放着）
                 try {
                     const bondMarker = "【八字玄学羁绊】：";
                     const newBondText = `${bondMarker}${aiResult.summary}`;
@@ -463,22 +518,15 @@ ${liuyaoData}
                         toastr.success("💘 姻缘羁绊已通过基础接口写入并保存至角色卡描述中！");
                     } 
                     else {
-                        let debugLog = "【酒馆助手 API 追踪报告】\n\n";
-                        debugLog += "1. window.TavernHelper 是否存在？ " + (typeof window.TavernHelper !== 'undefined') + "\n";
-                        if (window.TavernHelper) {
-                            const thKeys = Object.keys(window.TavernHelper).filter(k => k.toLowerCase().includes('char'));
-                            debugLog += "2. TavernHelper 内包含的 Character 接口有：\n" + (thKeys.length ? thKeys.join(", ") : "无") + "\n";
-                        }
-                        const winKeys = Object.keys(window).filter(k => k.toLowerCase().includes('updatecharacter'));
-                        debugLog += "\n3. 全局 window 是否有 updateCharacterWith？ " + (winKeys.length > 0 ? winKeys.join(", ") : "没有找到") + "\n";
-                        debugLog += "\n4. globalThis 测试？ " + (typeof globalThis.updateCharacterWith) + "\n";
-                        alert(debugLog);
+                        toastr.warning("⚠️ 写入角色卡失败：未检测到酒馆助手的修改 API。");
                     }
                 } catch (charErr) {
                     console.error("写入角色卡失败:", charErr);
                     toastr.error("❌ 写入角色卡发生异常，请检查控制台报错。");
                 }
             }
+        } else if (mode === 'real') {
+             toastr.success("✅ 三次元推演完成！");
         }
 
     } catch (error) {
@@ -486,6 +534,6 @@ ${liuyaoData}
         $('#bazi_summary-content').html("⚠️ 测算失败。");
         $('#bazi_details-content').html(error.message);
     } finally {
-        $('#bazi_sendBtn_Real').prop('disabled', false);
+        $('#bazi_executeBtn').text("🙏 正式向AI发送推演").prop('disabled', false);
     }
 }

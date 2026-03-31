@@ -1,4 +1,4 @@
-const extensionName = "bazi-gacha-array-test";
+const extensionName = "bazi-gacha-array-test"; // 确保和测试文件夹同名
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 if (typeof marked === 'undefined') {
@@ -7,12 +7,32 @@ if (typeof marked === 'undefined') {
     document.head.appendChild(script);
 }
 
+// ======================================================================
+// ⚠️【请把你原本那几百行的 pcaData 和省市区联动函数贴在这里！】⚠️
+// ======================================================================
+let pcaData = {
+    // ... 这里贴你原来的省市县 JSON 数据 ...
+};
+const SPECIAL_PROVS = ["香港特别行政区", "澳门特别行政区", "台湾"];
+const OTHER_KEY = "海外及其他地区";
+
+function setupLocationGroup(prefix) {
+    // ... 这里贴你原来的 setupLocationGroup 联动逻辑 ...
+}
+
+function getLocationString(prefix) {
+    // ... 这里贴你原来的 getLocationString 提取逻辑 ...
+    return "测试地址"; // 没贴回来前临时兜底
+}
+// ======================================================================
+
+
 // ================== 前端 64卦 硬核映射表 ==================
 const hexagramMap = {
     "111111":"乾为天", "000000":"坤为地", "100010":"水雷屯", "010001":"山水蒙", "111010":"水天需", "010111":"天水讼", "010000":"地水师", "000010":"水地比", "111011":"风天小畜", "110111":"天泽履", "111000":"地天泰", "000111":"天地否", "101111":"天火同人", "111101":"火天大有", "001000":"地山谦", "000100":"雷地豫", "100110":"泽雷随", "011001":"山风蛊", "110000":"地泽临", "000011":"风地观", "100101":"火雷噬嗑", "101001":"山火贲", "000001":"山地剥", "100000":"地雷复", "100111":"天雷无妄", "111001":"山天大畜", "100001":"山雷颐", "011110":"泽风大过", "010010":"坎为水", "101101":"离为火", "001110":"泽山咸", "011100":"雷风恒", "001111":"天山遁", "111100":"雷天大壮", "000101":"火地晋", "101000":"地火明夷", "101011":"风火家人", "110101":"火泽睽", "001010":"水山蹇", "010100":"雷水解", "110001":"山泽损", "100011":"风雷益", "111110":"泽天夬", "011111":"天风姤", "000110":"泽地萃", "011000":"地风升", "010110":"泽水困", "011010":"水风井", "101110":"泽火革", "011101":"火风鼎", "100100":"震为雷", "001001":"艮为山", "001011":"风山渐", "110100":"雷泽归妹", "101100":"雷火丰", "001101":"火山旅", "011011":"巽为风", "110110":"兑为泽", "010011":"风水涣", "110010":"水泽节", "110011":"风泽中孚", "001100":"雷山小过", "101010":"水火既济", "010101":"火水未济"
 };
 
-// ================== [恢复 1] 追加到酒馆聊天框的核心逻辑 ==================
+// ================== 追加到酒馆聊天框的核心逻辑 ==================
 function appendToChatInput(text) {
     try {
         const $chatInput = $('#send_textarea');
@@ -24,8 +44,6 @@ function appendToChatInput(text) {
             $chatInput[0].dispatchEvent(new Event('input', { bubbles: true }));
             $chatInput.trigger('input');
             $chatInput.focus();
-            
-            toastr.success("✨ GM断语已添加到输入框，可继续编辑！");
         } else {
             toastr.error("⚠️ 未能找到酒馆聊天输入框！");
         }
@@ -34,7 +52,7 @@ function appendToChatInput(text) {
     }
 }
 
-// 恢复给 HTML 行内 onclick 调用的全局函数
+// 暴露给 HTML 调用的全局函数
 window.sendRpgRequest = (actionType) => executeDivination('rpg', actionType);
 
 // ================== 六爻起卦 ==================
@@ -72,7 +90,7 @@ function castLiuyao() {
     $('#bazi_castBtn').text("☯️ 卦象已成 (点击可重新起卦)").css("background-color", "#8b0000");
 }
 
-// ================== 初始化与 Tab 切换 ==================
+// ================== 界面初始化与全局事件绑定 ==================
 jQuery(async () => {
     try {
         const uiHtml = await $.get(`${extensionFolderPath}/bazi_ui.html`);
@@ -85,11 +103,21 @@ jQuery(async () => {
         return;
     }
 
-    $("#bazi_open_modal_btn").on("click", () => $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast'));
-    $("#bazi_modal_close").on("click", () => $("#bazi_modal_container").fadeOut('fast'));
-    $("#bazi_modal_container").on("click", function(e) { if (e.target === this) $(this).fadeOut('fast'); });
+    // 【核心修复】：使用事件委托绑定点击事件，彻底解决按钮点击没反应的问题！
+    $(document).on("click", "#bazi_open_modal_btn", function() {
+        $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast');
+    });
+    
+    $(document).on("click", "#bazi_modal_close", function() {
+        $("#bazi_modal_container").fadeOut('fast');
+    });
 
-    $('.bazi-tab-btn').on('click', function() {
+    $(document).on("click", "#bazi_modal_container", function(e) { 
+        if (e.target === this) $(this).fadeOut('fast'); 
+    });
+
+    // 绑定 Tab 切换
+    $(document).on('click', '.bazi-tab-btn', function() {
         $('.bazi-tab-btn').removeClass('active');
         $(this).addClass('active');
         const target = $(this).data('tab');
@@ -105,16 +133,28 @@ jQuery(async () => {
         }
     });
 
+    // 恢复配置数据
     const savedUseStApi = localStorage.getItem('bazi_use_st_api');
     if (savedUseStApi !== null) $('#bazi_use_st_api').prop('checked', savedUseStApi === 'true');
-    $('#bazi_use_st_api').on('change', () => $('#bazi_use_st_api').is(':checked') ? $('#bazi_custom_api_block').slideUp() : $('#bazi_custom_api_block').slideDown());
+    $(document).on('change', '#bazi_use_st_api', function() {
+        if($(this).is(':checked')) {
+            $('#bazi_custom_api_block').slideUp();
+        } else {
+            $('#bazi_custom_api_block').slideDown();
+        }
+    });
     if(!$('#bazi_use_st_api').is(':checked')) $('#bazi_custom_api_block').show();
 
     $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
     $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
     
-    $('#bazi_castBtn').on('click', castLiuyao);
-    $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
+    // 初始化省市区
+    setupLocationGroup('bazi_birth'); 
+    setupLocationGroup('bazi_live');
+
+    // 绑定测算按钮
+    $(document).on('click', '#bazi_castBtn', castLiuyao);
+    $(document).on('click', '#bazi_sendBtn_Real', () => executeDivination('real'));
 });
 
 // ================== 核心调度器 ==================
@@ -141,17 +181,18 @@ async function executeDivination(mode, actionType = null) {
         if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
         
         systemPrompt = `你现在是一个精通《周易》卦爻辞及八字命理的专业人员。\n【日期推演】当前日期：${todayStr}。请确立起始日期，若凶则在7日内另择吉日...`;
-        userPrompt = `阳历生日：${$('#bazi_birthday').val()}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
+        
+        // 【核心恢复】：恢复现实模式传入省市区的逻辑
+        const birthLoc = getLocationString('bazi_birth');
+        const liveLoc = getLocationString('bazi_live');
+        userPrompt = `阳历生日：${$('#bazi_birthday').val()} 性别：${$('#bazi_gender').val()}\n出生地：${birthLoc}\n现居地：${liveLoc}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
         
     } 
-    // ================== [恢复 2] RPG 模式上下文获取 (极高安全防护) ==================
     else if (mode === 'rpg') {
         let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
         
         try {
-            // 安全获取上下文，杜绝 SillyTavern 未定义导致的崩溃
             const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
-            
             if (context) {
                 userDesc = context.user_persona || "普通人类";
                 const charData = (context.characters && context.characterId) ? context.characters[context.characterId] : null;
@@ -164,20 +205,25 @@ async function executeDivination(mode, actionType = null) {
                 }
             }
         } catch (ctxErr) {
-            console.warn("🔮 抓取酒馆上下文时遇到警告，已启用保底预设:", ctxErr);
+            console.warn("🔮 抓取酒馆上下文警告，已启用保底预设:", ctxErr);
         }
         
         const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
 
-        systemPrompt = `你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 严格按要求输出 JSON 格式。`;
+        systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 严格按要求输出 JSON 格式，不要发散写小说。\n2. summary字段是你作为GM给出的简短断语。`;
         
         let taskDesc = "";
-        if(actionType === 'bond') taskDesc = "测算用户与角色的八字姻缘及当前羁绊状态。";
-        else if(actionType === 'check') taskDesc = `对用户的行动意图【${extraInput}】进行剧情检定（大成功/成功/失败/大失败），给出判定结果与玄学原因。`;
-        else if(actionType === 'event') taskDesc = "生成一个强烈的随机突发事件（如意外、第三者介入、环境异变），用于打破当前僵局。";
-        else if(actionType === 'radar') taskDesc = "为用户寻找目标提供方位、五行元素相关的模糊但绝对有用的玄学雷达线索。";
+        if(actionType === 'bond') {
+            taskDesc = "测算用户与角色的八字姻缘及当前羁绊状态。请在summary中给出一句极其精炼、适合作为被动设定的【羁绊断语】（例如：命理互补，金水相生，对用户有天然的信任感）。";
+        } else if(actionType === 'check') {
+            taskDesc = `对用户的行动意图【${extraInput}】进行剧情检定（大成功/成功/失败/大失败），给出判定结果与玄学原因。`;
+        } else if(actionType === 'event') {
+            taskDesc = "生成一个强烈的随机突发事件（如意外、第三者介入、环境异变），用于打破当前僵局。";
+        } else if(actionType === 'radar') {
+            taskDesc = "为用户寻找目标提供方位、五行元素相关的模糊但绝对有用的玄学雷达线索。";
+        }
 
-        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出 JSON：\n{\n  "summary": "一句话概括动作意图或旁白（我将放入玩家输入框。如：顺着水声，我发现了密室暗门）",\n  "hexagram_interpretation": "简短六爻卦象解读",\n  "details": "详细的情境推演细节"\n}`;
+        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出 JSON：\n{\n  "summary": "一句话概括动作意图或羁绊设定（如果是动作判定，我将放入玩家输入框）",\n  "hexagram_interpretation": "简短六爻卦象解读",\n  "details": "详细的情境推演细节"\n}`;
     }
 
     $('.bazi-tab-btn[data-tab="tab-gua"]').click();
@@ -212,12 +258,44 @@ async function executeDivination(mode, actionType = null) {
         $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
         $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
 
-        // ================== [恢复 3] 触发追加逻辑 ==================
         if (mode === 'rpg') {
-            if (aiResult.summary) {
+            // 1. 追加到输入框逻辑（拦截 bond 动作）
+            if (aiResult.summary && actionType !== 'bond') {
                 appendToChatInput(aiResult.summary);
+                toastr.success("✨ GM断语已添加到输入框，可继续编辑！");
             }
-            // 注：D1 系统注入 (TavernHelper.injectPrompts) 依然屏蔽，留在下一步排查！
+
+            // 2. 如果是“测算羁绊” (bond)，将其永久写入角色设定 (Description) 中
+            if (actionType === 'bond' && aiResult.summary) {
+                try {
+                    if (window.TavernHelper && window.TavernHelper.updateCharacterWith) {
+                        await window.TavernHelper.updateCharacterWith('current', char => {
+                            const appendText = `\n【八字玄学羁绊】：${aiResult.summary}`;
+                            if (!char.description.includes("八字玄学羁绊")) {
+                                char.description += appendText;
+                                toastr.success("💘 姻缘羁绊已永久写入当前角色的设定(Description)中！");
+                            } else {
+                                toastr.info("💘 角色卡中已有羁绊设定，本次未重复写入。");
+                            }
+                            return char;
+                        });
+                    } else {
+                        // 兜底方案：如果没装 TavernHelper，直接改本地内存
+                        const context = typeof window.SillyTavern !== 'undefined' ? window.SillyTavern.getContext() : null;
+                        if (context && context.characters && context.characterId) {
+                            const charData = context.characters[context.characterId];
+                            if (!charData.description.includes("八字玄学羁绊")) {
+                                charData.description += `\n【八字玄学羁绊】：${aiResult.summary}`;
+                                toastr.success("💘 羁绊已写入内存 (但需要去角色编辑页点保存才能永久生效)！");
+                            } else {
+                                toastr.info("💘 角色卡中已有羁绊设定。");
+                            }
+                        }
+                    }
+                } catch (charErr) {
+                    console.error("写入角色卡失败:", charErr);
+                }
+            }
         }
 
     } catch (error) {

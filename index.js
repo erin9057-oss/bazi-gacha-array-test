@@ -177,7 +177,7 @@ function castLiuyao() {
     $('#bazi_castBtn').text("☯️ 心诚则灵 点击重新起卦").css("background-color", "#666");
 }
 
-// ================== 前置准备调度器 (绑定在Tab 2/3 的按钮上) ==================
+// ================== 前置准备调度器 ==================
 window.sendRpgRequest = (actionType) => prepareDivination('rpg', actionType);
 
 function prepareDivination(mode, actionType = null) {
@@ -288,6 +288,36 @@ jQuery(async () => {
         $('#bazi_castBtn').after('<button id="bazi_executeBtn" style="margin-left: 10px; background-color: #2e8b57; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;">🙏 正式向AI发送推演</button>');
     }
     $('#bazi_executeBtn').off('click').on('click', executePendingDivination);
+
+    // 🟢 世界书多选抓取引擎
+    $('#bazi_load_wi_btn').off('click').on('click', () => {
+        const $container = $('#bazi_wi_list_container');
+        $container.empty(); 
+        
+        if (typeof window.world_info !== 'undefined' && window.world_info.entries) {
+            const entries = Object.values(window.world_info.entries);
+            if (entries.length === 0) {
+                $container.html('<span style="font-size: 13px; color: #A6535A; text-align: center;">当前聊天没有激活的世界书条目！</span>');
+                return;
+            }
+            
+            entries.forEach(entry => {
+                let label = entry.comment || entry.key.join(', ');
+                if(label.length > 25) label = label.substring(0, 25) + '...'; 
+                
+                const checkboxHtml = `
+                    <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: normal; margin-bottom: 0; color: #1a1a1a;">
+                        <input type="checkbox" class="bazi-wi-checkbox" value="${encodeURIComponent(entry.content)}" style="width: 16px; height: 16px; margin-top: 2px; cursor: pointer;">
+                        <span style="font-size: 13px; line-height: 1.4;">${label}</span>
+                    </label>
+                `;
+                $container.append(checkboxHtml);
+            });
+            toastr.success(`✅ 成功抓取 ${entries.length} 个条目，请在下方勾选需要发送的设定！`);
+        } else {
+            $container.html('<span style="font-size: 13px; color: #A6535A; text-align: center;">⚠️ 未检测到世界书，请确保您当前正处于聊天中。</span>');
+        }
+    });
 });
 
 // ================== 核心 AI 请求与分配调度器 ==================
@@ -312,12 +342,14 @@ async function executePendingDivination() {
     let systemPrompt = "";
     let userPrompt = "";
 
+    // 🌟 全局抓取生日、时辰和性别 (解决 Tab3 无法获取 Tab2 生日的问题)
+    const gender = $('#bazi_gender').val() || "未知";
+    const birthday = $('#bazi_birthday').val() || "未知";
+    const birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "任选当天吉时";
+
     // ============= Prompt 组装 =============
     if (mode === 'real') {
         const wish = $('#bazi_wish_real').val().trim();
-        const gender = $('#bazi_gender').val();
-        const birthday = $('#bazi_birthday').val();
-        let birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "任选当天吉时";
         const birthPlace = getLocationString('bazi_birth');
         const livePlace = getLocationString('bazi_live');
 
@@ -365,7 +397,6 @@ ${liuyaoData}
     else if (mode === 'rpg') {
         let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
         try {
-            // 🌟 核心升级：改用酒馆助手标准的上下文抓取 API 替代旧版硬调机制
             const fnGetCharData = resolveApi('getCharData');
             const fnGetChatMessages = resolveApi('getChatMessages');
             
@@ -379,7 +410,6 @@ ${liuyaoData}
             if (fnGetChatMessages) {
                 const msgs = fnGetChatMessages('-5', { role: 'all' });
                 if (msgs && msgs.length > 0) {
-                    // 注意：TavernHelper 的 ChatMessage 结构文本属性为 message 
                     chatHistory = msgs.map(m => `${m.name || 'Unknown'}: ${m.message || ''}`).join('\n');
                 }
             }
@@ -394,6 +424,17 @@ ${liuyaoData}
         
         const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
 
+        // 🌟 世界书多选追加逻辑
+        let wiContextStr = "";
+        const selectedWIs = [];
+        $('.bazi-wi-checkbox:checked').each(function() {
+            selectedWIs.push(decodeURIComponent($(this).val()));
+        });
+        
+        if (selectedWIs.length > 0) {
+            wiContextStr = `\n【用户手动附加的当前世界书设定】\n${selectedWIs.join('\n\n')}\n`;
+        }
+
         systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“修仙GM”。你精通《周易》卦爻辞及体用生克之法，且深谙中国传统八字命理的专业研究人员。你熟读穷通宝典、三命通会、滴天髓、渊海子平、千里命稿、协纪辨方书、果老星宗、子平真诠、神峰通考等一系列书籍。
 在传统命理的架构中，八字与六爻对应着宏观的“体”与微观的“用”。结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演,你需严格遵循以下规则：
 第一，理清尺度：八字是先天定局加流年演播，定大势。六爻讲究“无事不占，不动不占”，捕捉起心动念瞬间的微观气运。
@@ -401,8 +442,6 @@ ${liuyaoData}
 第三，必须严格遵循“先观命理之大势，再决行事之进退”的固定次序（先命后卜）。\n此外，你必须：\n1. 必须输出合法、纯净的 JSON 格式！绝对不要在 JSON 里加任何 // 注释！\n2. 不要发散写小说。summary字段是你作为GM给出的推演精华。`;
         
         let taskDesc = "";
-        const birthday = $('#bazi_birthday').val() || "未知";
-        const birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "未知";
 
         if(actionType === 'bond') {
             taskDesc = `根据【角色设定】和【用户设定】测算<user>与角色的八字（如果信息不够可以参考用户阳历生日 ${birthday} 出生时间 ${birthTime} ),推演姻缘及当前羁绊状态。请在summary中结合双方八字，本卦以及变卦，给出一句凝练、适合作为被动设定的合八字结果（例如：命理互补，金水相生，对<user>有天然的信任）。`;
@@ -416,7 +455,8 @@ ${liuyaoData}
             taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于八字六爻与角色世界观给出合理的玄学解读。`;
         }
 
-        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（根据任务填入一句话核心内容）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（用世外高人的说话风格根据任务内容的不同应用调整输出人称和语气。例姻缘是用作设定补充，应为无人称罗列判词；随机事件是新任务应为GM语气发布任务等）"\n}`;
+        // 注意：将 wiContextStr 注入到 Prompt 中
+        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}${wiContextStr}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（根据任务填入一句话核心内容）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（用世外高人的说话风格根据任务内容的不同应用调整输出人称和语气。例姻缘是用作设定补充，应为无人称罗列判词；随机事件是新任务应为GM语气发布任务等）"\n}`;
     }
 
     // ============= 发送请求 =============
@@ -427,7 +467,6 @@ ${liuyaoData}
         let aiContentString = "";
 
         if (useStApi) {
-            // 🌟 核心升级：采用最新版的 generateRaw 接收 ordered_prompts 的规范
             const fnGenerateRaw = resolveApi('generateRaw');
             if (fnGenerateRaw) {
                 aiContentString = await fnGenerateRaw({
@@ -505,7 +544,6 @@ ${liuyaoData}
                     const bondMarker = "【八字姻缘】：";
                     const newBondText = `${bondMarker}${aiResult.summary}`;
 
-                    // 新版直接传 'current' 就行
                     if (fnUpdateCharacterWith) {
                         await fnUpdateCharacterWith('current', char => {
                             if (char.description.includes(bondMarker)) {
@@ -546,4 +584,4 @@ ${liuyaoData}
     } finally {
         $('#bazi_executeBtn').text("🙏 正式向大师请愿").prop('disabled', false);
     }
-                                                                                         }
+}

@@ -61,10 +61,12 @@
 .bazi-modal-wrapper .bazi-cast-btn { background-color: var(--SmartThemeQuoteColor, #555) !important; margin-bottom: 10px;}
 .bazi-modal-wrapper .bazi-cast-btn:hover { filter: brightness(1.2); }
 
-/* RPG 四大按钮网格 */
+/* RPG 按钮网格 */
 .bazi-rpg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
 .bazi-rpg-btn { background-color: #8b0000 !important; font-size: 15px; padding: 10px; }
 .bazi-rpg-btn:hover { background-color: #a50000 !important; transform: translateY(-1px); }
+/* 神奇的 CSS：如果最后只剩下一个奇数按钮（第5个），让它横跨两列填充！ */
+.bazi-rpg-btn:last-child:nth-child(odd) { grid-column: 1 / -1; background-color: #6a008a !important; }
 
 /* --- 六爻 UI --- */
 .bazi-modal-wrapper .hexagram-container {

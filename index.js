@@ -72,7 +72,7 @@ function castLiuyao() {
 }
 
 // ================== 原生阅后即焚引擎 (监听器) ==================
-let isBaziEventInjected = false; // 全局标记：判断当前是否有未清理的玄学事件
+let isBaziEventInjected = false;
 
 jQuery(async () => {
     try {
@@ -86,11 +86,9 @@ jQuery(async () => {
         return;
     }
 
-    // 绑定原生全局事件：当 AI 回复结束时，自动清空我们的隐藏注入
     if (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) {
         SillyTavern.eventSource.on(SillyTavern.eventTypes.GENERATION_ENDED, async () => {
             if (isBaziEventInjected) {
-                // 调用原生 Slash Command 清理
                 await SillyTavern.executeSlashCommandsWithOptions('/flushinject bazi_rpg_inject');
                 isBaziEventInjected = false;
                 console.log("🔮 [玄学跑团] 阅后即焚触发：AI 回复结束，已拔除 D1 系统指令！");
@@ -153,14 +151,20 @@ async function executeDivination(mode, actionType = null) {
         let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
         
         try {
+            // 这里获取上下文依然使用官方接口以获取用户设定和聊天记录
             const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
             if (context) {
                 userDesc = context.user_persona || "普通人类";
-                const charData = (context.characters && context.characterId) ? context.characters[context.characterId] : null;
-                if (charData) {
-                    charName = charData.name || "未知角色";
-                    charDesc = charData.description || "无详细描述";
+                
+                // 重点：角色数据直接从全局底层数组抓取，绝不使用克隆体！
+                if (typeof window.characters !== 'undefined' && typeof window.this_chid !== 'undefined') {
+                    const trueCharData = window.characters[window.this_chid];
+                    if (trueCharData) {
+                        charName = trueCharData.name || "未知角色";
+                        charDesc = trueCharData.description || "无详细描述";
+                    }
                 }
+
                 if (context.chat && context.chat.length > 0) {
                     chatHistory = context.chat.slice(-5).map(m => `${m.name || 'Unknown'}: ${m.mes || ''}`).join('\n');
                 }
@@ -234,37 +238,43 @@ async function executeDivination(mode, actionType = null) {
 
         if (mode === 'rpg' && aiResult.summary) {
             if (actionType !== 'bond') {
-                // 1. 剧情动作分发：追加输入框 + 原生宏命令 D1 注入
                 appendToChatInput(aiResult.summary);
                 
                 if (aiResult.details && typeof SillyTavern !== 'undefined') {
-                    // 防止内容里的换行符或特殊字符破坏宏命令结构
                     const safeDetails = aiResult.details.replace(/\|/g, ' ').replace(/\n/g, ' ');
                     const injectCmd = `/inject id=bazi_rpg_inject position=chat depth=1 role=system [System Note(玄学判定,阅后即焚): ${safeDetails}]`;
-                    
                     await SillyTavern.executeSlashCommandsWithOptions(injectCmd);
-                    isBaziEventInjected = true; // 告知后台监听器：炸弹已安放，随时准备清理
+                    isBaziEventInjected = true; 
                 }
                 
             } else {
-                // 2. 羁绊测算分发：修改内存并用前端技巧骗出保存
-                const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
-                if (context && context.characters && context.characterId) {
-                    const charData = context.characters[context.characterId];
+                // ✨ 终极破壁法：突破影分身，直接向底层真身开刀
+                if (typeof window.characters !== 'undefined' && typeof window.this_chid !== 'undefined') {
+                    const trueCharData = window.characters[window.this_chid];
                     
-                    if (!charData.description.includes("八字玄学羁绊")) {
-                        charData.description += `\n【八字玄学羁绊】：${aiResult.summary}`;
+                    if (trueCharData && !trueCharData.description.includes("八字玄学羁绊")) {
+                        const appendText = `\n【八字玄学羁绊】：${aiResult.summary}`;
+                        // 1. 写入底层真身内存
+                        trueCharData.description += appendText;
                         
-                        // 神操作：找到前端可能存在的描述文本框，强行触发双向绑定
-                        const $descBox = $('.character_popup_description, #character_popup_description');
+                        // 2. 幽灵打字机：寻找 UI 上的 description 文本框
+                        const $descBox = $('#character_popup_description, textarea[name="description"]');
                         if ($descBox.length) {
-                            $descBox.val(charData.description).trigger('input');
+                            const oldVal = $descBox.val();
+                            if (!oldVal.includes("八字玄学羁绊")) {
+                                $descBox.val(oldVal + appendText);
+                                // 模拟玩家键盘输入，强行引出酒馆的自动保存！
+                                $descBox[0].dispatchEvent(new Event('input', { bubbles: true }));
+                                $descBox.trigger('change');
+                            }
                         }
                         
-                        toastr.success("💘 羁绊已写入内存！(为确保永久生效，建议打开右侧角色属性面板点一下描述框)");
+                        toastr.success("💘 羁绊已穿透克隆防线，强制写入底层并同步至 UI！(请点开右侧描述框确认，若未看到保存提示，请在框内随便按个空格)");
                     } else {
                         toastr.info("💘 角色卡中已有羁绊设定。");
                     }
+                } else {
+                    toastr.error("❌ 无法抓取到底层全局角色数据！");
                 }
             }
         }

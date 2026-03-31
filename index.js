@@ -19,55 +19,55 @@ let isBaziEventInjected = false;
 
 // ================== 本地游戏知识库 ==================
 const GameDatabase = [
-  {
-    name: "恋与深空", keywords: ["恋与深空", "深空"],
-    desc: "一款近未来幻想的3D乙女恋爱手游，提供高沉浸互动体验。主控为女性猎人小姐。五星卡分为日卡和月卡，日卡为两张一套，必须抽齐一套才有用，满150抽会送一张用户可自选两张中任意一张；月卡就是单张，和其他游戏相同。",
-    characters: [
-      { name: "沈星回", info: "生日：10月16日，EVOL属性：光" },
-      { name: "黎深", info: "生日：9月5日，EVOL属性：冰" },
-      { name: "祁煜", info: "生日：3月6日，EVOL属性：火" },
-      { name: "秦彻", info: "生日：4月18日，EVOL属性：能量操控" },
-      { name: "夏以昼", info: "生日：6月13日，EVOL属性：引力" }
-    ]
-  },
-  {
-    name: "世界之外", keywords: ["世界之外", "世外"],
-    desc: "网易开发的无限流言情手游。女性玩家扮演不同角色于副本中完成任务，体验超越现实的甜蜜爱恋。",
-    characters: [
-      { name: "顾时夜", info: "生日：11月22日" },
-      { name: "易遇", info: "生日：12月31日" },
-      { name: "柏源", info: "生日：4月15日" },
-      { name: "夏萧因", info: "生日：9月10日" }
-    ]
-  },
-  {
-    name: "无限暖暖", keywords: ["无限暖暖", "暖暖"],
-    desc: "暖暖系列第五代作品，一款多平台开放世界换装冒险游戏，玩家将与大喵在奇迹大陆探索解谜。注：本游戏不抽卡，抽四星阁/五星阁。为服装部件，四星阁5抽保底一件，五星阁20抽保底一件，整套多为8-11件，满进化需抽2套。本游戏不会歪常驻服装。",
-    characters: [
-      { name: "苏暖暖", info: "生日：12月6日" },
-      { name: "暖暖", info: "生日：12月6日" }
-    ]
-  }
+    {
+        name: "恋与深空", keywords: ["恋与深空", "深空"],
+        desc: "一款近未来幻想的3D乙女恋爱手游，提供高沉浸互动体验。主控为女性猎人小姐。五星卡分为日卡和月卡，日卡为两张一套，必须抽齐一套才有用，满150抽会送一张用户可自选两张中任意一张；月卡就是单张，和其他游戏相同。",
+        characters: [
+            { name: "沈星回", info: "生日：10月16日，EVOL属性：光" },
+            { name: "黎深", info: "生日：9月5日，EVOL属性：冰" },
+            { name: "祁煜", info: "生日：3月6日，EVOL属性：火" },
+            { name: "秦彻", info: "生日：4月18日，EVOL属性：能量操控" },
+            { name: "夏以昼", info: "生日：6月13日，EVOL属性：引力" }
+        ]
+    },
+    {
+        name: "世界之外", keywords: ["世界之外", "世外"],
+        desc: "网易开发的无限流言情手游。女性玩家扮演不同角色于副本中完成任务，体验超越现实的甜蜜爱恋。",
+        characters: [
+            { name: "顾时夜", info: "生日：11月22日" },
+            { name: "易遇", info: "生日：12月31日" },
+            { name: "柏源", info: "生日：4月15日" },
+            { name: "夏萧因", info: "生日：9月10日" }
+        ]
+    },
+    {
+        name: "无限暖暖", keywords: ["无限暖暖", "暖暖"],
+        desc: "暖暖系列第五代作品，一款多平台开放世界换装冒险游戏，玩家将与大喵在奇迹大陆探索解谜。注：本游戏不抽卡，抽四星阁/五星阁。为服装部件，四星阁5抽保底一件，五星阁20抽保底一件，整套多为8-11件，满进化需抽2套。本游戏不会歪常驻服装。",
+        characters: [
+            { name: "苏暖暖", info: "生日：12月6日" },
+            { name: "暖暖", info: "生日：12月6日" }
+        ]
+    }
 ];
 
 function extractGameContext(wishText) {
-  let injectedContext = "";
-  GameDatabase.forEach(game => {
-    let isGameMentioned = game.keywords.some(kw => wishText.includes(kw));
-    let mentionedChars = game.characters.filter(c => wishText.includes(c.name));
-    if (isGameMentioned || mentionedChars.length > 0) {
-      injectedContext += `\n【系统注入补充资料：${game.name}】\n游戏简介：${game.desc}\n相关角色信息：\n`;
-      let printedInfos = new Set();
-      let targetChars = (isGameMentioned && mentionedChars.length === 0) ? game.characters : mentionedChars;
-      targetChars.forEach(c => {
-        if (!printedInfos.has(c.info)) {
-          injectedContext += `- ${c.name}: ${c.info}\n`;
-          printedInfos.add(c.info);
+    let injectedContext = "";
+    GameDatabase.forEach(game => {
+        let isGameMentioned = game.keywords.some(kw => wishText.includes(kw));
+        let mentionedChars = game.characters.filter(c => wishText.includes(c.name));
+        if (isGameMentioned || mentionedChars.length > 0) {
+            injectedContext += `\n【系统注入补充资料：${game.name}】\n游戏简介：${game.desc}\n相关角色信息：\n`;
+            let printedInfos = new Set();
+            let targetChars = (isGameMentioned && mentionedChars.length === 0) ? game.characters : mentionedChars;
+            targetChars.forEach(c => {
+                if (!printedInfos.has(c.info)) {
+                    injectedContext += `- ${c.name}: ${c.info}\n`;
+                    printedInfos.add(c.info);
+                }
+            });
         }
-      });
-    }
-  });
-  return injectedContext;
+    });
+    return injectedContext;
 }
 
 // ================== 前端 64卦 硬核映射表 ==================

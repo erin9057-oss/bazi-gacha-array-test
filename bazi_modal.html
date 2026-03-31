@@ -37,21 +37,20 @@
                 </div>
             </div>
 
-            <!-- TAB 2: 三次元现实推演 (原生功能) -->
+            <!-- TAB 2: 三次元现实推演 -->
             <div id="tab-real" class="bazi-tab-content">
                 <h3 class="section-title">📜 命主基本信息 (先天八字之体)</h3>
                 <div class="flex-input input-group">
                     <div><label>性别</label><select id="bazi_gender"><option value="女">女</option><option value="男">男</option></select></div>
                     <div><label>阳历生日</label><input type="date" id="bazi_birthday"></div>
                 </div>
-                <div class="input-group"><label>出生时间 (留空默认任选吉时)</label><input type="text" id="bazi_birthTime" placeholder="例如: 早上8点半, 辰时"></div>
                 <div class="input-group">
                     <label>出生地 <span id="bazi_birth-loading" style="font-size: 12px; color: #d4af37;">(加载中...)</span></label>
                     <div class="location-group" id="bazi_birth-group">
                         <select class="prov"><option value="">请选择省份</option></select>
                         <select class="city"><option value="">请选择城市</option></select>
                         <select class="dist"><option value="">请选择区县</option></select>
-                        <input type="text" class="other" placeholder="请输入海外国家或详细地址">
+                        <input type="text" class="other" placeholder="海外国家/详细地址">
                     </div>
                 </div>
                 <div class="input-group">
@@ -60,7 +59,7 @@
                         <select class="prov"><option value="">请选择省份</option></select>
                         <select class="city"><option value="">请选择城市</option></select>
                         <select class="dist"><option value="">请选择区县</option></select>
-                        <input type="text" class="other" placeholder="请输入海外国家或详细地址">
+                        <input type="text" class="other" placeholder="海外国家/详细地址">
                     </div>
                 </div>
                 <h3 class="section-title">✨ 现实心愿</h3>
@@ -68,25 +67,28 @@
                     <label>想要许什么愿望？(如抽卡、求职、考试)</label>
                     <textarea id="bazi_wish_real" rows="2" placeholder="例如：明天中午玩某某游戏抽卡出限定角色"></textarea>
                 </div>
-                <div class="notice">💡 提示：填写完心愿后，请前往【起卦与结果】标签页抛掷铜钱并推演。</div>
+                <div class="notice">💡 提示：请先前往【☯️ 起卦与结果】标签页抛掷铜钱，再点击下方排盘。</div>
+                <!-- 现实模式专用发送按钮，固定在 Tab 2 底部 -->
+                <button id="bazi_sendBtn_Real" class="bazi-submit-btn">🙏 结印排盘 (用于现实三次元心愿)</button>
             </div>
 
             <!-- TAB 3: 剧情跑团推演 -->
             <div id="tab-rpg" class="bazi-tab-content">
                 <div class="notice" style="border-color: #8b0000; background: rgba(139,0,0,0.1);">
                     🎲 <strong>赛博 GM 引擎：</strong> 将自动抓取当前聊天角色信息、设定与最近对话历史。<br>
-                    推演结果将自动以 <strong>（追加内容）</strong> 的形式注入底部的聊天输入框，不会直接发送，允许你二次编辑！
+                    推演结果将自动以 <strong>（追加内容）</strong> 的形式注入底部的聊天输入框，允许你二次编辑！
                 </div>
                 <div class="input-group">
                     <label>补充剧情细节 (非必填，可在此输入想问的具体事宜)：</label>
                     <textarea id="bazi_rpg_extra_input" rows="2" placeholder="例如：我想趁他不注意偷走桌上的钥匙... / 门后的脚步声是谁？"></textarea>
                 </div>
-                <label style="color: #aaa; font-size: 13px; margin-top: 15px; display: block;">请先前往【☯️ 起卦】页面掷出铜钱，然后再点击下方对应的动作进行剧情推演：</label>
+                <div class="notice">💡 提示：请先前往【☯️ 起卦与结果】标签页抛掷铜钱，再点击下方的动作检定。</div>
+                <!-- 跑团模式 4 个专属按钮，固定在 Tab 3 底部 -->
                 <div class="bazi-rpg-grid">
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('bond')">💘 测算羁绊 (合婚与关系)</button>
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('check')">🎲 剧情检定 (判定行动成功率)</button>
-                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('event')">🌪️ 突发事件 (降下符合世界观的意外)</button>
-                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (寻找关键线索/物品)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('event')">🌪️ 突发事件 (降下世界观意外)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (寻找线索/物品)</button>
                 </div>
             </div>
 
@@ -100,9 +102,6 @@
                     </div>
                     <input type="hidden" id="bazi_liuyaoResultData">
                 </div>
-                
-                <!-- 现实模式下的专用推演按钮 (剧情模式通过Tab 3的按钮触发) -->
-                <button id="bazi_sendBtn_Real" class="bazi-submit-btn" style="display: block;">🙏 结印排盘 (用于现实三次元心愿)</button>
                 
                 <div class="output-container">
                     <div class="box" id="bazi_box-summary">

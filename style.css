@@ -8,32 +8,52 @@
 }
 
 /* =========================================
-   🌟 宣纸与敦煌矿物色主面板 (Xuan Paper & Readability Fix)
+   🌟 宣纸底色与主面板 (Readability Fix)
 ========================================= */
 .bazi-modal-wrapper { 
     font-family: inherit;
-    /* 🌟 Readability Fix：强制使用淡奶油宣纸底色，确保任何主题文字清晰 */
-    background-color: #FEF8EC !important; 
-    /* 🌟 文字颜色强制设为深 charcoal 灰，绝不黑瞎眼 */
-    color: #1a1a1a !important;
+    background-color: #FEF8EC !important; /* 强制淡奶油宣纸底色 */
+    color: #1a1a1a !important; /* 强制深墨色文字 */
     text-align: left;
-    border: 1px solid rgba(181, 152, 101, 0.4); /* 古金色边框 */
+    border: 1px solid rgba(181, 152, 101, 0.4); 
     border-radius: 8px;
-    box-shadow: 6px 6px 0px rgba(181, 152, 101, 0.3); /* 古金几何错位投影 */
+    box-shadow: 6px 6px 0px rgba(181, 152, 101, 0.3); 
     overflow: hidden;
     position: relative;
 }
 
-/* 🌟 标题也改成了胭脂红，去皮 */
+/* =========================================
+   🌟 顶部标题横幅 (向左固色填充，绝对比例靠右)
+========================================= */
 .bazi-modal-wrapper h2 { 
     color: #A6535A !important; 
-    border-bottom: 2px solid rgba(166, 83, 90, 0.3); 
-    padding-bottom: 12px; font-weight: 900;
+    font-weight: 900;
+    margin: -20px -20px 20px -20px; 
+    padding: 25px 20px 20px 20px;
+    
+    /* 🌟 核心修改：右侧原图等比贴合高度，左侧用宣纸色填充 */
+    background-color: #FEF8EC;
+    background-image: url('https://iili.io/B3aqU92.png'); 
+    background-position: right center;
+    background-repeat: no-repeat;
+    background-size: auto 100%; /* 高度占满，宽度等比缩放 */
+    
+    border-bottom: 2px solid rgba(166, 83, 90, 0.4); 
+    border-radius: 8px 8px 0 0; 
+    text-shadow: 2px 2px 4px #FEF8EC, -2px -2px 4px #FEF8EC, 2px -2px 4px #FEF8EC, -2px 2px 4px #FEF8EC;
 }
-#bazi_modal_close { color: #A6535A !important; opacity: 1 !important; font-weight: bold; }
+
+/* 右上角关闭按钮的颜色和层级调整 */
+#bazi_modal_close { 
+    color: #A6535A !important; 
+    opacity: 1 !important; 
+    font-weight: bold;
+    z-index: 20; 
+    text-shadow: 1px 1px 3px #FEF8EC, -1px -1px 3px #FEF8EC;
+}
 
 /* =========================================
-   🌟 Tab 导航栏 (完美对齐边缘，不吞字，emoji滤镜)
+   🌟 Tab 导航栏
 ========================================= */
 .bazi-tabs-nav {
     display: flex; flex-wrap: nowrap;
@@ -42,22 +62,16 @@
     margin-bottom: 20px;
 }
 .bazi-tab-btn {
-    flex: 1; /* 绝对平分宽度 */
-    padding: 10px 2px; 
-    text-align: center; 
-    cursor: pointer; 
-    background: transparent; 
-    color: #1a1a1a !important; /* 强制设为深色 */
+    flex: 1; padding: 10px 2px; text-align: center; 
+    cursor: pointer; background: transparent; 
+    color: #1a1a1a !important; 
     border: none; border-bottom: 3px solid transparent; 
-    font-size: 13px; 
-    font-weight: bold;
+    font-size: 13px; font-weight: bold;
     opacity: 0.6; transition: all 0.2s;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* 🌟 Emoji统一灰调滤镜 */
 .bazi-tab-btn span, .bazi-rpg-btn span {
-    filter: sepia(100%) brightness(0.9) contrast(1.1);
-    transition: filter 0.2s;
+    filter: sepia(100%) brightness(0.9) contrast(1.1); transition: filter 0.2s;
 }
 .bazi-tab-btn:hover { opacity: 1; background-color: rgba(166, 83, 90, 0.05); }
 .bazi-tab-btn.active { opacity: 1; color: #A6535A !important; border-bottom-color: #A6535A; }
@@ -69,36 +83,32 @@
 
 .bazi-modal-wrapper .section-title {
     border-bottom: 1px dashed rgba(181, 152, 101, 0.4); 
-    color: #B59865; /* 水墨古金色 */
+    color: #B59865; 
     padding-bottom: 5px; margin-top: 15px; margin-bottom: 15px; font-size: 16px; font-weight: bold;
 }
 
+/* =========================================
+   🌟 表单输入框
+========================================= */
 .bazi-modal-wrapper .input-group { margin-bottom: 15px; }
 .bazi-modal-wrapper label { font-weight: bold; font-size: 13px; display: block; margin-bottom: 6px; color: #1a1a1a !important;}
 
-/* =========================================
-   🌟 输入框统一高度对齐，原生去皮
-========================================= */
 .bazi-modal-wrapper input[type="text"], 
 .bazi-modal-wrapper input[type="password"], 
 .bazi-modal-wrapper input[type="date"], 
 .bazi-modal-wrapper select { 
-    width: 100%; 
-    height: 40px; /* 强制所有单行框绝对等高 */
-    line-height: normal;
+    width: 100%; height: 40px; line-height: normal;
     padding: 0 10px; margin: 0;
     border: 1px solid rgba(181, 152, 101, 0.4); 
     border-radius: 4px; font-family: inherit; font-size: 14px;
-    background-color: transparent !important; /* 宣纸色底 */
-    color: #1a1a1a !important; /* 强制设为深色 */
+    background-color: transparent !important; 
+    color: #1a1a1a !important; 
     outline: none; -webkit-appearance: none; appearance: none;
 }
-/* 给 select 和 date 补回一个好看的下拉小箭头 */
 .bazi-modal-wrapper select, .bazi-modal-wrapper input[type="date"] {
     background-image: url('data:image/svg+xml;utf8,<svg fill="%23888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
     background-repeat: no-repeat; background-position: right 8px center; padding-right: 30px;
 }
-/* 解决安卓日期选择器图标问题 */
 .bazi-modal-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
     background: transparent; bottom: 0; color: transparent; cursor: pointer; height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
 }
@@ -108,8 +118,8 @@
     width: 100%; padding: 10px; 
     border: 1px solid rgba(181, 152, 101, 0.4); border-radius: 4px; 
     font-family: inherit; font-size: 14px;
-    background-color: transparent !important; /* 宣纸色底 */
-    color: #1a1a1a !important; /* 强制设为深色 */
+    background-color: transparent !important; 
+    color: #1a1a1a !important; 
     outline: none; resize: vertical; line-height: 1.5;
 }
 
@@ -119,12 +129,14 @@
 .bazi-modal-wrapper .flex-input { display: flex; gap: 10px; align-items: flex-end;}
 .bazi-modal-wrapper .flex-input > div { flex: 1; min-width: 0; }
 
-/* 🌟 水墨风 RPG 按钮 (单列、两端对齐、不吞字、滤镜) */
+/* =========================================
+   🌟 RPG 交互按钮
+========================================= */
 .bazi-rpg-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
 .bazi-rpg-btn {
     width: 100%; height: auto !important; min-height: 46px;
     padding: 10px 15px !important; font-size: 14.5px; line-height: 1.5;
-    text-align: justify; /* 两端对齐，使多行文本排版更整齐 */
+    text-align: justify; 
     border: 1px solid rgba(181, 152, 101, 0.4);
     border-radius: 6px; color: #eee !important; margin: 0;
     cursor: pointer; transition: all 0.2s; white-space: normal !important;
@@ -133,33 +145,31 @@
 .bazi-rpg-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
 .bazi-rpg-btn:hover span { filter: none !important; }
 
-/* 水墨高级矿物调色盘 (半透明，胭脂红、靛青、竹青、秋香、苍灰) */
+/* 敦煌矿物色盘 */
 .bazi-rpg-btn:nth-child(1) { background-color: rgba(166, 83, 90, 0.8) !important; } 
 .bazi-rpg-btn:nth-child(2) { background-color: rgba(82, 95, 110, 0.8) !important; } 
 .bazi-rpg-btn:nth-child(3) { background-color: rgba(92, 122, 107, 0.8) !important; } 
 .bazi-rpg-btn:nth-child(4) { background-color: rgba(181, 137, 83, 0.8) !important; } 
 .bazi-rpg-btn:nth-child(5) { background-color: rgba(74, 76, 78, 0.9) !important; }   
 
-/* 🌟 按钮高度绝对统一 */
 .bazi-modal-wrapper .bazi-submit-btn, 
 .bazi-modal-wrapper .bazi-cast-btn {
-    height: 46px !important; /* 强制高度一致 */
+    height: 46px !important; 
     display: flex !important; align-items: center; justify-content: center;
     padding: 0 10px; border: 1px solid rgba(166, 83, 90, 0.4); border-radius: 6px;
     color: #fff !important; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%;
     transition: all 0.2s; margin-top: 0 !important;
 }
-.bazi-cast-btn { background-color: rgba(130, 120, 105, 0.8) !important; } /* 枯岩色 */
-.bazi-submit-btn { background-color: rgba(82, 111, 88, 0.9) !important; } /* 水墨松绿 */
+.bazi-cast-btn { background-color: rgba(130, 120, 105, 0.8) !important; } 
+.bazi-submit-btn { background-color: rgba(82, 111, 88, 0.9) !important; } 
 .bazi-cast-btn:hover, .bazi-submit-btn:hover { filter: brightness(1.2); }
 .bazi-submit-btn:disabled { background-color: rgba(100, 100, 100, 0.5) !important; color: #999 !important; cursor: not-allowed; }
-
 #bazi_sendBtn_Real { margin-top: 10px !important; }
-
-/* 修复 HTML 里内联 !important 导致的颜色覆盖 */
 #bazi_executeBtn { background-color: rgba(82, 111, 88, 0.9) !important; }
 
-/* --- 六爻 UI --- */
+/* =========================================
+   🌟 输出区与 Markdown
+========================================= */
 .bazi-modal-wrapper .hexagram-container {
     background: transparent; border-radius: 6px;
     padding: 20px 10px; text-align: center; display: none; margin-top: 10px;
@@ -174,12 +184,11 @@
 .bazi-modal-wrapper .hexagram-line span.yao-mark { font-size: 16px; font-weight: bold; color: #B59865; width: 50px; text-align: left; }
 .bazi-modal-wrapper .hexagram-line span.yao-type { font-size: 14px; color: #1a1a1a !important; opacity:0.8; width: 40px; text-align: left; }
 
-/* 🌟 输出区 */
 .bazi-modal-wrapper .output-container { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
 .bazi-modal-wrapper .box { 
     border: 1px solid rgba(181, 152, 101, 0.4); 
     padding: 15px; border-radius: 6px; 
-    background-color: rgba(254, 248, 236, 0.8); /* 宣纸色半透明 */
+    background-color: rgba(254, 248, 236, 0.8); 
 }
 .bazi-modal-wrapper .box strong.box-title { 
     display: block; margin-bottom: 10px; color: #B59865; 
@@ -187,7 +196,6 @@
     padding-bottom: 5px; font-size: 15px; 
 }
 
-/* Markdown 渲染优化 */
 .bazi-modal-wrapper .content-area { font-size: 14px; line-height: 1.6; word-break: break-all; opacity: 0.9; color: #1a1a1a !important;}
 .bazi-modal-wrapper .content-area h1, .bazi-modal-wrapper .content-area h2, .bazi-modal-wrapper .content-area h3 { font-size: 15px; color: #B59865; margin: 15px 0 8px 0; border-bottom: 1px dashed rgba(181, 152, 101, 0.4); padding-bottom: 4px; }
 .bazi-modal-wrapper .content-area p { margin: 8px 0; }
@@ -196,3 +204,23 @@
 .bazi-modal-wrapper .content-area strong { background: rgba(181, 152, 101, 0.2); color: #B59865; padding: 1px 5px; font-weight: bold; }
 .bazi-modal-wrapper .content-area blockquote { border-left: 3px solid #B59865; margin: 10px 0; padding: 8px 12px; opacity: 0.8; background-color: rgba(181, 152, 101, 0.1); }
 .bazi-modal-wrapper .notice { font-size: 12.5px; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid rgba(181, 152, 101, 0.4); line-height: 1.5; opacity: 0.85; color: #1a1a1a !important; background-color: rgba(181, 152, 101, 0.05);}
+
+/* =========================================
+   🌟 自适应背景注入
+========================================= */
+
+/* 1. 中部背景：固定右上角，保持比例，自适应屏幕宽度但不超大 */
+#tab-real, #tab-rpg {
+    background-image: url('https://iili.io/B3c4I3v.png');
+    background-position: top right;
+    background-repeat: no-repeat;
+    background-size: min(65%, 400px) auto; 
+}
+
+/* 2. 底部背景：固定左下角，保持比例，自适应屏幕宽度但不超大 */
+#tab-gua {
+    background-image: url('https://iili.io/B30F2DP.png');
+    background-position: bottom left;
+    background-repeat: no-repeat;
+    background-size: min(65%, 400px) auto; 
+}

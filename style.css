@@ -53,39 +53,53 @@
 }
 
 /* =========================================
-   🌟 Tab 导航栏
+   🌟 Tab 导航栏 (杂志风排版，多行不吞字，带阴影动画)
 ========================================= */
 .bazi-tabs-nav {
-    display: flex; flex-wrap: nowrap;
-    width: 100%; gap: 2px;
-    border-bottom: 1px solid rgba(166, 83, 90, 0.3); 
-    margin-bottom: 20px;
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); /* 绝对平分成4等份 */
+    gap: 6px; 
+    margin-bottom: 25px; 
+    border: none; /* 移除旧底线 */
 }
 .bazi-tab-btn {
-    flex: 1; padding: 10px 2px; text-align: center; 
-    cursor: pointer; background: transparent; 
+    background: transparent; 
     color: #1a1a1a !important; 
-    border: none; border-bottom: 3px solid transparent; 
-    font-size: 13px; font-weight: bold;
-    opacity: 0.6; transition: all 0.2s;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    border: 1px solid rgba(181, 152, 101, 0.5); /* 淡淡的古金边框 */
+    border-radius: 6px; /* 微小圆角不突兀 */
+    padding: 8px 4px; 
+    font-size: 13px; 
+    font-weight: bold;
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    white-space: normal; /* 🌟 核心修复：允许文字折行，绝对不吞字 */
+    line-height: 1.3;
+    min-height: 52px; /* 保证两行字也有足够高度 */
+    display: flex; 
+    flex-direction: column; /* 图标和文字自然排布 */
+    align-items: center; 
+    justify-content: center; 
+    text-align: center;
 }
+/* 🌟 Emoji统一灰调滤镜 */
 .bazi-tab-btn span, .bazi-rpg-btn span {
-    filter: sepia(100%) brightness(0.9) contrast(1.1); transition: filter 0.2s;
+    filter: sepia(100%) brightness(0.9) contrast(1.1);
+    transition: filter 0.2s;
 }
-.bazi-tab-btn:hover { opacity: 1; background-color: rgba(166, 83, 90, 0.05); }
-.bazi-tab-btn.active { opacity: 1; color: #A6535A !important; border-bottom-color: #A6535A; }
+.bazi-tab-btn:hover { 
+    background-color: rgba(181, 152, 101, 0.1); 
+    transform: translateY(-2px);
+}
+.bazi-tab-btn.active { 
+    opacity: 1; 
+    color: #A6535A !important; /* 胭脂红字体 */
+    background-color: #FEF8EC; /* 宣纸色底，防透视 */
+    border: 1px solid #A6535A; 
+    border-bottom: 4px solid #A6535A; /* 强调底边 */
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0px rgba(166, 83, 90, 0.2); /* 胭脂红错位几何投影 */
+}
 .bazi-tab-btn.active span { filter: none !important; }
-
-.bazi-tab-content { display: none; animation: fadeIn 0.3s; }
-.bazi-tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-
-.bazi-modal-wrapper .section-title {
-    border-bottom: 1px dashed rgba(181, 152, 101, 0.4); 
-    color: #B59865; 
-    padding-bottom: 5px; margin-top: 15px; margin-bottom: 15px; font-size: 16px; font-weight: bold;
-}
 
 /* =========================================
    🌟 表单输入框

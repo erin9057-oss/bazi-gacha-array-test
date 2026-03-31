@@ -117,7 +117,7 @@ async function executeDivination(mode, actionType = null) {
 
     if(!useStApi && (!apiUrl || !apiKey)) return toastr.warning("请填写自定义 API，或勾选使用酒馆主 API！");
     if(!liuyaoData) {
-        $('.bazi-tab-btn[data-tab="tab-gua"]').click(); 
+        $('.bazi-tab-btn[data-tab="tab-gua"]').click();
         return toastr.warning("【警告】请先点击按钮抛掷三枚铜钱起卦！");
     }
 
@@ -132,7 +132,10 @@ async function executeDivination(mode, actionType = null) {
         if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
         
         systemPrompt = `你现在是一个精通《周易》卦爻辞及八字命理的专业人员。\n【日期推演】当前日期：${todayStr}。请确立起始日期，若凶则在7日内另择吉日...`;
-        userPrompt = `阳历生日：${$('#bazi_birthday').val()}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
+        
+        const birthLoc = typeof getLocationString === 'function' ? getLocationString('bazi_birth') : "未知";
+        const liveLoc = typeof getLocationString === 'function' ? getLocationString('bazi_live') : "未知";
+        userPrompt = `阳历生日：${$('#bazi_birthday').val()} 性别：${$('#bazi_gender').val()}\n出生地：${birthLoc}\n现居地：${liveLoc}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
         
     } 
     else if (mode === 'rpg') {
@@ -157,7 +160,6 @@ async function executeDivination(mode, actionType = null) {
         
         const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
 
-        // 🟢 加入强力防偏题护盾与严格的 JSON 要求
         systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 必须输出合法、纯净的 JSON 格式！绝对不要在 JSON 里加任何 // 注释！\n2. 不要发散写小说。summary字段是你作为GM给出的简短断语。`;
         
         let taskDesc = "";
@@ -199,12 +201,8 @@ async function executeDivination(mode, actionType = null) {
             aiContentString = data.choices[0].message.content;
         }
 
-        // ================== 🟢 强力 JSON 清洗器 (防暴毙装甲) ==================
-        // 1. 剔除 DeepSeek 等模型的 <think> 过程
         let cleanedString = aiContentString.replace(/<think>[\s\S]*?<\/think>/gi, '').trim(); 
-        // 2. 剔除 markdown 的 ```json 外壳
         cleanedString = cleanedString.replace(/```json/gi, '').replace(/```/g, '').trim();
-        // 3. 暴力截取首尾大括号
         const firstBrace = cleanedString.indexOf('{');
         const lastBrace = cleanedString.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
@@ -215,36 +213,29 @@ async function executeDivination(mode, actionType = null) {
         try {
             aiResult = JSON.parse(cleanedString);
         } catch (parseErr) {
-            console.error("❌ JSON 解析致命错误！AI返回的原始文本是：\n", aiContentString);
-            throw new Error(`AI 返回的格式不规范，解析失败！按 F12 打开控制台查看详情。`);
+            console.error("❌ JSON 解析致命错误！原始文本：\n", aiContentString);
+            throw new Error(`AI 返回格式不规范，解析失败！按 F12 查看控制台。`);
         }
         
         $('#bazi_summary-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.summary || "") : aiResult.summary);
         $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
         $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
 
-        // 🟢 处理 RPG 结果分发
         if (mode === 'rpg' && aiResult.summary) {
             if (actionType !== 'bond') {
-                // 非羁绊动作：直接追加到输入框
                 appendToChatInput(aiResult.summary);
             } else {
-                // 羁绊测算：拦截输入框，写入角色卡并自动保存
                 try {
                     if (window.TavernHelper && window.TavernHelper.updateCharacterWith) {
-                        // 使用 TavernHelper 接口
                         await window.TavernHelper.updateCharacterWith('current', char => {
-                            const appendText = `\n【八字玄学羁绊】：${aiResult.summary}`;
                             if (!char.description.includes("八字玄学羁绊")) {
-                                char.description += appendText;
-                                toastr.success("💘 姻缘羁绊已永久写入当前角色设定 (Description) 中！");
-                            } else {
-                                toastr.info("💘 角色卡中已有羁绊设定，本次未重复写入。");
-                            }
+                                char.description += `\n【八字玄学羁绊】：${aiResult.summary}`;
+                                toastr.success("💘 姻缘羁绊已永久写入当前角色设定中！");
+                            } else toastr.info("💘 角色卡中已有羁绊设定。");
                             return char;
                         });
                     } else {
-                        // 兜底接口：直接修改内存，并强制触发底层硬盘保存
+                        // ✨ 终极兜底方案：直接请求酒馆底层保存 API
                         const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
                         if (context && context.characters && context.characterId) {
                             const charData = context.characters[context.characterId];
@@ -252,19 +243,23 @@ async function executeDivination(mode, actionType = null) {
                             if (!charData.description.includes("八字玄学羁绊")) {
                                 charData.description += `\n【八字玄学羁绊】：${aiResult.summary}`;
                                 
-                                // 尝试同步更新到 UI (如果页面开着的话)
+                                // 同步更新 UI 以防玩家点开看着是旧的
                                 const $descBox = $('#character_popup_description');
-                                if ($descBox.length) {
-                                    $descBox.val(charData.description);
-                                }
+                                if ($descBox.length) $descBox.val(charData.description);
 
-                                // 强制触发酒馆全局的防抖保存机制
-                                if (typeof window.saveCharacterDebounced === 'function') {
-                                    window.saveCharacterDebounced();
-                                    toastr.success("💘 羁绊已通过原生接口永久写入角色卡，并已保存到本地！");
-                                } else {
-                                    toastr.success("💘 羁绊已写入内存 (未能自动保存，请手动触发)！");
-                                }
+                                // 直接跟酒馆后端服务器通信，强行覆盖写入硬盘！
+                                $.ajax({
+                                    type: 'POST',
+                                    url: '/api/characters/edit',
+                                    data: JSON.stringify(charData),
+                                    contentType: "application/json; charset=utf-8",
+                                    success: function () {
+                                        toastr.success("💘 羁绊已通过底层 API 永久写入角色卡，并保存到本地硬盘！");
+                                    },
+                                    error: function () {
+                                        toastr.warning("💘 羁绊已写入内存，但后台保存失败，请打开角色卡随便打个字触发保存。");
+                                    }
+                                });
                             } else {
                                 toastr.info("💘 角色卡中已有羁绊设定。");
                             }

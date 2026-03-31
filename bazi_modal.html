@@ -82,6 +82,19 @@
                     <label>补充需求细节 / 自由推演要求：</label>
                     <textarea id="bazi_rpg_extra_input" rows="2" placeholder="例如：随机事件走搞笑风类似我想趁他不注意偷走桌上的桃... / 我应该向什么方位搜查线索？"></textarea>
                 </div>
+                
+                <!-- 👇 新增：世界书多选列表 UI 👇 -->
+                <div class="input-group">
+                    <label>📚 附加世界书条目 (可选，抓取后可自由勾选多个)</label>
+                    <button id="bazi_load_wi_btn" class="bazi-cast-btn" style="height: 40px; margin-bottom: 10px; font-size: 14px;">📥 一键抓取当前激活的世界书</button>
+                    
+                    <!-- 多选列表容器 (带滚动条，融入宣纸底色) -->
+                    <div id="bazi_wi_list_container" style="max-height: 130px; overflow-y: auto; border: 1px solid rgba(181, 152, 101, 0.4); border-radius: 4px; padding: 10px; background-color: rgba(254, 248, 236, 0.5); display: flex; flex-direction: column; gap: 8px;">
+                        <span style="font-size: 13px; color: #827869; text-align: center; font-weight: normal;">点击上方按钮抓取内存中的条目...</span>
+                    </div>
+                </div>
+                <!-- 👆 新增结束 👆 -->
+
                 <div class="notice">💡 提示：点击下方对应玩法后，将自动为您起卦并跳转至确认面板。</div>
                 <div class="bazi-rpg-grid">
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('bond')">💘 情缘天定 (合八字算姻缘)</button>

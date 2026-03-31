@@ -15,7 +15,6 @@ const hexagramMap = {
 // 安全获取 TavernHelper 的兜底函数
 function getTavernHelper() {
     if (typeof window.TavernHelper !== 'undefined') return window.TavernHelper;
-    if (typeof TavernHelper !== 'undefined') return TavernHelper;
     return null;
 }
 
@@ -71,55 +70,79 @@ function castLiuyao() {
 let baziInjectUninjector = null; 
 let isBaziEventInjected = false; 
 
+// ================== 初始化与 Tab 切换 ==================
 jQuery(async () => {
+    console.log("🔮 [八字插件] 开始初始化...");
+
+    // 1. 挂载 UI (如果失败就立刻停止，否则没界面)
     try {
         const uiHtml = await $.get(`${extensionFolderPath}/bazi_ui.html`);
         $("#extensions_settings").append(uiHtml);
         const modalHtml = await $.get(`${extensionFolderPath}/bazi_modal.html`);
         $("body").append(modalHtml);
+        console.log("🔮 [八字插件] UI 挂载成功！");
     } catch (e) {
-        console.error("❌ 界面加载失败:", e);
+        console.error("❌ [八字插件] 界面挂载彻底失败 (请检查文件夹名是否匹配):", e);
         return;
     }
 
-    // 双重护盾：监听生成结束，自动拔除 D1 注入
-    if (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) {
-        SillyTavern.eventSource.on(SillyTavern.eventTypes.GENERATION_ENDED, async () => {
-            if (baziInjectUninjector) {
-                baziInjectUninjector(); 
-                baziInjectUninjector = null;
-                console.log("🔮 [玄学跑团] 阅后即焚触发：已通过 TavernHelper 拔除 D1 注入！");
-            }
-            if (isBaziEventInjected) {
-                await SillyTavern.executeSlashCommandsWithOptions('/flushinject bazi_rpg_inject');
-                isBaziEventInjected = false;
-                console.log("🔮 [玄学跑团] 阅后即焚触发：已通过原生宏命令拔除 D1 注入！");
-            }
-        });
+    // 2. 绑定事件监听 (穿戴防弹衣，即使报错也不影响 UI)
+    try {
+        // 兼容不同酒馆版本的事件源
+        const evtSource = (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) ? SillyTavern.eventSource : window.eventSource;
+        const evtTypes = (typeof SillyTavern !== 'undefined' && SillyTavern.eventTypes) ? SillyTavern.eventTypes : window.event_types;
+        
+        if (evtSource && evtTypes && evtTypes.GENERATION_ENDED) {
+            evtSource.on(evtTypes.GENERATION_ENDED, async () => {
+                if (baziInjectUninjector) {
+                    baziInjectUninjector(); 
+                    baziInjectUninjector = null;
+                    console.log("🔮 [玄学跑团] 阅后即焚触发：已通过 TavernHelper 拔除 D1 注入！");
+                }
+                if (isBaziEventInjected) {
+                    const execSlash = (typeof SillyTavern !== 'undefined' && SillyTavern.executeSlashCommandsWithOptions) ? SillyTavern.executeSlashCommandsWithOptions : window.executeSlashCommandsWithOptions;
+                    if (execSlash) {
+                        await execSlash('/flushinject bazi_rpg_inject');
+                        isBaziEventInjected = false;
+                        console.log("🔮 [玄学跑团] 阅后即焚触发：已通过原生宏命令拔除 D1 注入！");
+                    }
+                }
+            });
+        } else {
+            console.warn("🔮 [八字插件] 未找到全局事件总线，D1 阅后即焚清理功能可能受限。");
+        }
+    } catch (evtErr) {
+        console.warn("🔮 [八字插件] 绑定事件总线时发生错误 (已跳过):", evtErr);
     }
 
-    $("#bazi_open_modal_btn").on("click", () => $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast'));
-    $("#bazi_modal_close").on("click", () => $("#bazi_modal_container").fadeOut('fast'));
-    $("#bazi_modal_container").on("click", function(e) { if (e.target === this) $(this).fadeOut('fast'); });
+    // 3. 绑定所有按钮和功能 (穿戴防弹衣)
+    try {
+        $("#bazi_open_modal_btn").on("click", () => $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast'));
+        $("#bazi_modal_close").on("click", () => $("#bazi_modal_container").fadeOut('fast'));
+        $("#bazi_modal_container").on("click", function(e) { if (e.target === this) $(this).fadeOut('fast'); });
 
-    $('.bazi-tab-btn').on('click', function() {
-        $('.bazi-tab-btn').removeClass('active');
-        $(this).addClass('active');
-        const target = $(this).data('tab');
-        $('.bazi-tab-content').removeClass('active');
-        $(`#${target}`).addClass('active');
-    });
+        $('.bazi-tab-btn').on('click', function() {
+            $('.bazi-tab-btn').removeClass('active');
+            $(this).addClass('active');
+            const target = $(this).data('tab');
+            $('.bazi-tab-content').removeClass('active');
+            $(`#${target}`).addClass('active');
+        });
 
-    const savedUseStApi = localStorage.getItem('bazi_use_st_api');
-    if (savedUseStApi !== null) $('#bazi_use_st_api').prop('checked', savedUseStApi === 'true');
-    $('#bazi_use_st_api').on('change', () => $('#bazi_use_st_api').is(':checked') ? $('#bazi_custom_api_block').slideUp() : $('#bazi_custom_api_block').slideDown());
-    if(!$('#bazi_use_st_api').is(':checked')) $('#bazi_custom_api_block').show();
+        const savedUseStApi = localStorage.getItem('bazi_use_st_api');
+        if (savedUseStApi !== null) $('#bazi_use_st_api').prop('checked', savedUseStApi === 'true');
+        $('#bazi_use_st_api').on('change', () => $('#bazi_use_st_api').is(':checked') ? $('#bazi_custom_api_block').slideUp() : $('#bazi_custom_api_block').slideDown());
+        if(!$('#bazi_use_st_api').is(':checked')) $('#bazi_custom_api_block').show();
 
-    $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
-    $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
-    
-    $('#bazi_castBtn').on('click', castLiuyao);
-    $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
+        $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
+        $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
+        
+        $('#bazi_castBtn').on('click', castLiuyao);
+        $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
+        console.log("🔮 [八字插件] 所有按钮绑定完成！");
+    } catch (btnErr) {
+        console.error("❌ [八字插件] 按钮绑定阶段报错:", btnErr);
+    }
 });
 
 // ================== 核心调度器 ==================
@@ -237,30 +260,32 @@ async function executeDivination(mode, actionType = null) {
             if (actionType !== 'bond') {
                 appendToChatInput(aiResult.summary);
                 if (aiResult.details) {
-                    if (TH && TH.injectPrompts) {
+                    if (TH && typeof TH.injectPrompts === 'function') {
                         const safeDetails = aiResult.details.replace(/\n/g, ' ');
                         const injectResult = TH.injectPrompts([{
                             id: "bazi_rpg_inject", position: 'in_chat', depth: 1, role: 'system',
                             content: `[System Note(玄学判定,阅后即焚): ${safeDetails}]`, should_scan: false
                         }], { once: false }); 
                         if (injectResult && typeof injectResult.uninject === 'function') baziInjectUninjector = injectResult.uninject;
-                    } else if (typeof SillyTavern !== 'undefined') {
-                        // 兜底方案：如果缺少 injectPrompts，用原生 Slash 宏命令注入 D1
+                    } else {
                         const safeDetails = aiResult.details.replace(/\|/g, ' ').replace(/\n/g, ' ');
                         const injectCmd = `/inject id=bazi_rpg_inject position=chat depth=1 role=system [System Note(玄学判定,阅后即焚): ${safeDetails}]`;
-                        await SillyTavern.executeSlashCommandsWithOptions(injectCmd);
-                        isBaziEventInjected = true; 
+                        const execSlash = (typeof SillyTavern !== 'undefined' && SillyTavern.executeSlashCommandsWithOptions) ? SillyTavern.executeSlashCommandsWithOptions : window.executeSlashCommandsWithOptions;
+                        if (execSlash) {
+                            await execSlash(injectCmd);
+                            isBaziEventInjected = true; 
+                        }
                     }
                 }
             } else {
-                // ✨ 自动降级适配器：写入角色描述
+                // 羁绊写入：层层降级的护盾
                 if (TH) {
                     try {
                         const bondMarker = "【八字玄学羁绊】：";
                         const newBondText = `${bondMarker}${aiResult.summary}`;
 
-                        if (TH.updateCharacterWith) {
-                            // 最佳路线：新版 TavernHelper 一键完成
+                        if (typeof TH.updateCharacterWith === 'function') {
+                            // 最佳路线：新版 TavernHelper
                             await TH.updateCharacterWith('current', char => {
                                 if (char.description.includes(bondMarker)) {
                                     char.description = char.description.replace(new RegExp("【八字玄学羁绊】：.*"), newBondText);
@@ -269,10 +294,10 @@ async function executeDivination(mode, actionType = null) {
                                 }
                                 return char;
                             });
-                            toastr.success("💘 姻缘羁绊已成功写入并保存至角色卡描述 (Description) 中！");
+                            toastr.success("💘 姻缘羁绊已成功写入并保存至角色卡描述中！");
                         } 
-                        else if (TH.getCharacter && TH.replaceCharacter) {
-                            // 备用路线：旧版 TavernHelper 组合拳
+                        else if (typeof TH.getCharacter === 'function' && typeof TH.replaceCharacter === 'function') {
+                            // 备用路线：旧版 TavernHelper
                             const char = await TH.getCharacter('current');
                             if (char.description.includes(bondMarker)) {
                                 char.description = char.description.replace(new RegExp("【八字玄学羁绊】：.*"), newBondText);
@@ -283,214 +308,14 @@ async function executeDivination(mode, actionType = null) {
                             toastr.success("💘 姻缘羁绊已通过基础接口写入并保存至角色卡描述中！");
                         } 
                         else {
-                            toastr.warning("⚠️ 找到酒馆助手，但缺少修改角色卡的所需 API。请打开 F12 查看详细情况。");
-                            console.log("当前 TavernHelper 包含的接口:", Object.keys(TH));
+                            toastr.warning("⚠️ 找到酒馆助手，但缺少修改角色卡的 API。请检查控制台。");
                         }
                     } catch (charErr) {
                         console.error("写入角色卡失败:", charErr);
-                        toastr.error("❌ 写入角色卡失败，请检查控制台。");
+                        toastr.error("❌ 写入角色卡发生异常，请检查控制台报错。");
                     }
                 } else {
-                    toastr.error("❌ 仍未找到酒馆助手对象 (TavernHelper)！请打开 F12 查看控制台。");
-                    console.log("当前 Window 对象包含的相关键:", Object.keys(window).filter(k => k.toLowerCase().includes('tavern')));
-                }
-            }
-        }
-
-    } catch (error) {
-        console.error("❌ 测算报错:", error);
-        $('#bazi_summary-content').html("⚠️ 测算失败。");
-        $('#bazi_details-content').html(error.message);
-    } finally {
-        $('#bazi_sendBtn_Real').prop('disabled', false);
-    }
-                                                                                     }                baziInjectUninjector(); 
-                baziInjectUninjector = null;
-                console.log("🔮 [玄学跑团] 阅后即焚触发：已通过 TavernHelper 拔除 D1 注入！");
-            }
-        });
-    }
-
-    $("#bazi_open_modal_btn").on("click", () => $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast'));
-    $("#bazi_modal_close").on("click", () => $("#bazi_modal_container").fadeOut('fast'));
-    $("#bazi_modal_container").on("click", function(e) { if (e.target === this) $(this).fadeOut('fast'); });
-
-    $('.bazi-tab-btn').on('click', function() {
-        $('.bazi-tab-btn').removeClass('active');
-        $(this).addClass('active');
-        const target = $(this).data('tab');
-        $('.bazi-tab-content').removeClass('active');
-        $(`#${target}`).addClass('active');
-    });
-
-    const savedUseStApi = localStorage.getItem('bazi_use_st_api');
-    if (savedUseStApi !== null) $('#bazi_use_st_api').prop('checked', savedUseStApi === 'true');
-    $('#bazi_use_st_api').on('change', () => $('#bazi_use_st_api').is(':checked') ? $('#bazi_custom_api_block').slideUp() : $('#bazi_custom_api_block').slideDown());
-    if(!$('#bazi_use_st_api').is(':checked')) $('#bazi_custom_api_block').show();
-
-    $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
-    $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
-    
-    $('#bazi_castBtn').on('click', castLiuyao);
-    $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
-});
-
-// ================== 核心调度器 ==================
-async function executeDivination(mode, actionType = null) {
-    const useStApi = $('#bazi_use_st_api').is(':checked');
-    const apiUrl = $('#bazi_apiUrl').val().trim();
-    const apiKey = $('#bazi_apiKey').val().trim();
-    const liuyaoData = $('#bazi_liuyaoResultData').val();
-
-    if(!useStApi && (!apiUrl || !apiKey)) return toastr.warning("请填写自定义 API，或勾选使用酒馆主 API！");
-    if(!liuyaoData) {
-        $('.bazi-tab-btn[data-tab="tab-gua"]').click(); 
-        return toastr.warning("【警告】请先点击按钮抛掷三枚铜钱起卦！");
-    }
-
-    const todayDate = new Date();
-    const todayStr = `${todayDate.getFullYear()}年${todayDate.getMonth() + 1}月${todayDate.getDate()}日`;
-
-    let systemPrompt = "";
-    let userPrompt = "";
-
-    if (mode === 'real') {
-        const wish = $('#bazi_wish_real').val().trim();
-        if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
-        systemPrompt = `你现在是一个精通《周易》卦爻辞及八字命理的专业人员。\n【日期推演】当前日期：${todayStr}。请确立起始日期，若凶则在7日内另择吉日...`;
-        userPrompt = `阳历生日：${$('#bazi_birthday').val()}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
-    } 
-    else if (mode === 'rpg') {
-        let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
-        try {
-            const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
-            if (context) {
-                userDesc = context.user_persona || "普通人类";
-                if (typeof window.characters !== 'undefined' && typeof window.this_chid !== 'undefined') {
-                    const trueCharData = window.characters[window.this_chid];
-                    if (trueCharData) {
-                        charName = trueCharData.name || "未知角色";
-                        charDesc = trueCharData.description || "无详细描述";
-                    }
-                }
-                if (context.chat && context.chat.length > 0) {
-                    chatHistory = context.chat.slice(-5).map(m => `${m.name || 'Unknown'}: ${m.mes || ''}`).join('\n');
-                }
-            }
-        } catch (ctxErr) {
-            console.warn("🔮 抓取酒馆上下文警告，已启用保底预设:", ctxErr);
-        }
-        
-        const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
-
-        systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 必须输出合法、纯净的 JSON 格式！绝对不要在 JSON 里加任何 // 注释！\n2. 不要发散写小说。summary字段是你作为GM给出的简短断语。`;
-        
-        let taskDesc = "";
-        if(actionType === 'bond') {
-            taskDesc = "测算用户与角色的八字姻缘及当前羁绊状态。请在summary中给出一句极其精炼、适合作为被动设定的【羁绊断语】（例如：命理互补，金水相生，对用户有天然的信任感）。";
-        } else if(actionType === 'check') {
-            taskDesc = `对用户的行动意图【${extraInput}】进行剧情检定（大成功/成功/失败/大失败），给出判定结果与玄学原因。`;
-        } else if(actionType === 'event') {
-            taskDesc = "生成一个强烈的随机突发事件（如意外、第三者介入、环境异变），用于打破当前僵局。";
-        } else if(actionType === 'radar') {
-            taskDesc = "为用户寻找目标提供方位、五行元素相关的模糊但绝对有用的玄学雷达线索。";
-        }
-
-        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（填入一句话判定或羁绊设定）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（填入详细的情境推演细节）"\n}`;
-    }
-
-    $('.bazi-tab-btn[data-tab="tab-gua"]').click();
-    $('#bazi_sendBtn_Real').prop('disabled', true);
-    $('#bazi_summary-content, #bazi_hexagram-content, #bazi_details-content').html("灵力流转中...");
-
-    try {
-        let aiContentString = "";
-
-        if (useStApi) {
-            const context = typeof window.SillyTavern !== 'undefined' ? window.SillyTavern.getContext() : window;
-            if (context && context.generateRaw) {
-                aiContentString = await context.generateRaw({ systemPrompt: systemPrompt, prompt: userPrompt });
-            } else {
-                throw new Error("酒馆 API 生成函数未找到，请在配置中填写自定义 API！");
-            }
-        } else {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                body: JSON.stringify({ model: $('#bazi_modelInput').val(), messages: [ {role: "system", content: systemPrompt}, {role: "user", content: userPrompt} ], response_format: { type: "json_object" } })
-            });
-            if(!response.ok) throw new Error(await response.text());
-            const data = await response.json();
-            aiContentString = data.choices[0].message.content;
-        }
-
-        let cleanedString = aiContentString.replace(/<think>[\s\S]*?<\/think>/gi, '').trim(); 
-        cleanedString = cleanedString.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const firstBrace = cleanedString.indexOf('{');
-        const lastBrace = cleanedString.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-            cleanedString = cleanedString.substring(firstBrace, lastBrace + 1);
-        }
-
-        let aiResult = {};
-        try {
-            aiResult = JSON.parse(cleanedString);
-        } catch (parseErr) {
-            console.error("❌ JSON 解析致命错误！原始文本：\n", aiContentString);
-            throw new Error(`AI 返回格式不规范，解析失败！按 F12 查看控制台。`);
-        }
-        
-        $('#bazi_summary-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.summary || "") : aiResult.summary);
-        $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
-        $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
-
-        if (mode === 'rpg' && aiResult.summary) {
-            if (actionType !== 'bond') {
-                // 1. D1系统注入：使用酒馆助手纯净 API
-                appendToChatInput(aiResult.summary);
-                if (aiResult.details && typeof window.TavernHelper !== 'undefined') {
-                    const safeDetails = aiResult.details.replace(/\n/g, ' ');
-                    const injectResult = window.TavernHelper.injectPrompts([{
-                        id: "bazi_rpg_inject",
-                        position: 'in_chat',
-                        depth: 1,
-                        role: 'system',
-                        content: `[System Note(玄学判定,阅后即焚): ${safeDetails}]`,
-                        should_scan: false
-                    }], { once: false }); 
-                    
-                    if (injectResult && typeof injectResult.uninject === 'function') {
-                        baziInjectUninjector = injectResult.uninject;
-                    }
-                }
-            } else {
-                // 2. 羁绊写入：利用 TavernHelper 最正统的 API 修改角色卡 Description
-                if (typeof window.TavernHelper !== 'undefined' && window.TavernHelper.updateCharacterWith) {
-                    try {
-                        await window.TavernHelper.updateCharacterWith('current', char => {
-                            const bondMarker = "【八字玄学羁绊】：";
-                            const newBondText = `${bondMarker}${aiResult.summary}`;
-                            
-                            // 检查描述中是否已经有羁绊记录
-                            if (char.description.includes(bondMarker)) {
-                                // 替换掉旧的羁绊文本（利用正则匹配该行）
-                                const regex = new RegExp("【八字玄学羁绊】：.*");
-                                char.description = char.description.replace(regex, newBondText);
-                                toastr.success("💘 姻缘羁绊已更新并自动保存至角色卡描述 (Description) 中！");
-                            } else {
-                                // 首次追加
-                                char.description += `\n${newBondText}`;
-                                toastr.success("💘 姻缘羁绊已追加并自动保存至角色卡描述 (Description) 中！");
-                            }
-                            // 返回修改后的对象，TavernHelper 会自动帮你执行底层保存和 UI 更新！
-                            return char;
-                        });
-                    } catch (charErr) {
-                        console.error("写入角色卡失败:", charErr);
-                        toastr.error("❌ 写入角色卡失败，请检查控制台。");
-                    }
-                } else {
-                    toastr.error("❌ 未找到酒馆助手 (TavernHelper)！请确保扩展已启用。");
+                    toastr.error("❌ 未找到酒馆助手 (TavernHelper)！请确保扩展已加载。");
                 }
             }
         }

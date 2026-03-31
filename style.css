@@ -23,23 +23,24 @@
 }
 
 /* =========================================
-   🌟 顶部标题横幅 (透明图 + 宣纸底色完美融合)
+   🌟 顶部标题横幅 (Banner 融入你上传的图片)
 ========================================= */
 .bazi-modal-wrapper h2 { 
-    color: #A6535A !important; 
+    color: #A6535A !important; /* 胭脂红字 */
     font-weight: 900;
-    margin: -20px -20px 20px -20px; 
+    margin: -20px -20px 20px -20px; /* 负边距让背景贴满顶部边缘 */
     padding: 25px 20px 20px 20px;
     
-    /* 🌟 替换为你的新透明图，底色用宣纸色托底 */
+    /* 🌟 左侧用宣纸色填充缝隙 */
     background-color: #FEF8EC;
-    background-image: url('https://iili.io/B31scZl.png'); 
-    background-position: right center;
+    background-image: url('https://iili.io/B3aqU92.png'); /* 你的图床链接 */
+    background-position: right center; /* 死死靠右对齐 */
     background-repeat: no-repeat;
-    background-size: auto 100%; /* 高度占满，宽度等比缩放 */
-    
+    background-size: auto 100%; /* 高度占满不拉伸，宽度等比缩放 */
+
     border-bottom: 2px solid rgba(166, 83, 90, 0.4); 
-    border-radius: 8px 8px 0 0; 
+    border-radius: 8px 8px 0 0; /* 顶部圆角跟随容器 */
+    /* 给文字加一圈奶油色泛光，防止被背景图的深色部分吃掉 */
     text-shadow: 2px 2px 4px #FEF8EC, -2px -2px 4px #FEF8EC, 2px -2px 4px #FEF8EC, -2px 2px 4px #FEF8EC;
 }
 
@@ -48,43 +49,41 @@
     color: #A6535A !important; 
     opacity: 1 !important; 
     font-weight: bold;
-    z-index: 20; 
+    z-index: 20; /* 确保在背景图之上 */
     text-shadow: 1px 1px 3px #FEF8EC, -1px -1px 3px #FEF8EC;
 }
 
 /* =========================================
-   🌟 Tab 导航栏 (杂志风排版，多行不吞字，带阴影动画)
+   🌟 Tab 导航栏
 ========================================= */
 .bazi-tabs-nav {
     display: grid; 
-    grid-template-columns: repeat(4, 1fr); /* 绝对平分成4等份 */
+    grid-template-columns: repeat(4, 1fr); 
     gap: 6px; 
     margin-bottom: 25px; 
-    border: none; /* 移除旧底线 */
+    border: none; 
 }
 .bazi-tab-btn {
     background: transparent; 
     color: #1a1a1a !important; 
-    border: 1px solid rgba(181, 152, 101, 0.5); /* 淡淡的古金边框 */
-    border-radius: 6px; /* 微小圆角不突兀 */
+    border: 1px solid rgba(181, 152, 101, 0.5); 
+    border-radius: 6px; 
     padding: 8px 4px; 
     font-size: 13px; 
     font-weight: bold;
     cursor: pointer; 
     transition: all 0.2s ease;
-    white-space: normal; /* 🌟 核心修复：允许文字折行，绝对不吞字 */
+    white-space: normal; 
     line-height: 1.3;
-    min-height: 52px; /* 保证两行字也有足够高度 */
+    min-height: 52px; 
     display: flex; 
-    flex-direction: column; /* 图标和文字自然排布 */
+    flex-direction: column; 
     align-items: center; 
     justify-content: center; 
     text-align: center;
 }
-/* 🌟 Emoji统一灰调滤镜 */
 .bazi-tab-btn span, .bazi-rpg-btn span {
-    filter: sepia(100%) brightness(0.9) contrast(1.1);
-    transition: filter 0.2s;
+    filter: sepia(100%) brightness(0.9) contrast(1.1); transition: filter 0.2s;
 }
 .bazi-tab-btn:hover { 
     background-color: rgba(181, 152, 101, 0.1); 
@@ -92,32 +91,27 @@
 }
 .bazi-tab-btn.active { 
     opacity: 1; 
-    color: #A6535A !important; /* 胭脂红字体 */
-    background-color: #FEF8EC; /* 宣纸色底，防透视 */
+    color: #A6535A !important; 
+    background-color: #FEF8EC; 
     border: 1px solid #A6535A; 
-    border-bottom: 4px solid #A6535A; /* 强调底边 */
+    border-bottom: 4px solid #A6535A; 
     transform: translateY(-2px);
-    box-shadow: 3px 3px 0px rgba(166, 83, 90, 0.2); /* 胭脂红错位几何投影 */
+    box-shadow: 3px 3px 0px rgba(166, 83, 90, 0.2); 
 }
 .bazi-tab-btn.active span { filter: none !important; }
 
-/* 🌟 Tab 内容切换动画 */
 .bazi-tab-content { display: none; animation: fadeIn 0.3s; }
 .bazi-tab-content.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 🌟 标题与装饰 (防挤压保护) */
 .bazi-modal-wrapper .section-title {
     border-bottom: 1px dashed rgba(181, 152, 101, 0.4); 
-    color: #B59865; /* 水墨古金色 */
-    padding-bottom: 5px; 
-    margin-top: 15px; 
-    margin-bottom: 15px; 
-    font-size: 16px; 
-    font-weight: bold;
+    color: #B59865; 
+    padding-bottom: 5px; margin-top: 15px; margin-bottom: 15px; font-size: 16px; font-weight: bold;
 }
+
 /* =========================================
-   🌟 表单输入框
+   🌟 表单输入框 (等高对齐)
 ========================================= */
 .bazi-modal-wrapper .input-group { margin-bottom: 15px; }
 .bazi-modal-wrapper label { font-weight: bold; font-size: 13px; display: block; margin-bottom: 6px; color: #1a1a1a !important;}
@@ -155,10 +149,10 @@
 .bazi-modal-wrapper .location-group { display: flex; gap: 8px; flex-wrap: nowrap; }
 .bazi-modal-wrapper .location-group select { flex: 1; min-width: 0; }
 .bazi-modal-wrapper .location-group input { flex: 1; min-width: 0; display: none; } 
+.bazi-modal-wrapper .flex-input { display: flex; gap: 10px; align-items: flex-end;}
+.bazi-modal-wrapper .flex-input > div:first-child { flex: 0 0 85px; } 
+.bazi-modal-wrapper .flex-input > div:last-child { flex: 1; min-width: 0; }
 
-.bazi-modal-wrapper .flex-input { display: flex; gap: 10px; align-items: flex-end; }
-.bazi-modal-wrapper .flex-input > div:first-child { flex: 0 0 85px; } /* 性别框锁死 85px 宽 */
-.bazi-modal-wrapper .flex-input > div:last-child { flex: 1; min-width: 0; } /* 生日框霸占剩余全部空间 */
 /* =========================================
    🌟 RPG 交互按钮
 ========================================= */
@@ -175,7 +169,6 @@
 .bazi-rpg-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
 .bazi-rpg-btn:hover span { filter: none !important; }
 
-/* 敦煌矿物色盘 */
 .bazi-rpg-btn:nth-child(1) { background-color: rgba(166, 83, 90, 0.8) !important; } 
 .bazi-rpg-btn:nth-child(2) { background-color: rgba(82, 95, 110, 0.8) !important; } 
 .bazi-rpg-btn:nth-child(3) { background-color: rgba(92, 122, 107, 0.8) !important; } 
@@ -236,20 +229,20 @@
 .bazi-modal-wrapper .notice { font-size: 12.5px; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid rgba(181, 152, 101, 0.4); line-height: 1.5; opacity: 0.85; color: #1a1a1a !important; background-color: rgba(181, 152, 101, 0.05);}
 
 /* =========================================
-   🌟 自适应透明背景注入 (物理融合宣纸底色)
+   🌟 自适应背景注入
 ========================================= */
 
-/* 1. 中部背景：透明仙鹤，固定右上角，自适应屏幕宽度但不超大 */
+/* 1. 中部背景：固定右上角，保持比例，自适应屏幕宽度但不超大 */
 #tab-real, #tab-rpg {
-    background-image: url('https://iili.io/B31sYuf.png');
+    background-image: url('https://iili.io/B3c4I3v.png');
     background-position: top right;
     background-repeat: no-repeat;
     background-size: min(65%, 400px) auto; 
 }
 
-/* 2. 底部背景：透明仙鹤道观，固定左下角，自适应屏幕宽度但不超大 */
+/* 2. 底部背景：固定左下角，保持比例，自适应屏幕宽度但不超大 */
 #tab-gua {
-    background-image: url('https://iili.io/B31saj4.png');
+    background-image: url('https://iili.io/B30F2DP.png');
     background-position: bottom left;
     background-repeat: no-repeat;
     background-size: min(65%, 400px) auto; 

@@ -1,0 +1,11 @@
+{
+    "display_name": "八字玄学求欧气阵法测试",
+    "loading_order": 9,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "PlusXii",
+    "version": "2.0.0",
+    "homePage": "https://github.com/your-repo/bazi-gacha-array-test"
+}

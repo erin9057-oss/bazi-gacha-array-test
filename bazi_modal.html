@@ -1,124 +1,264 @@
-<div id="bazi_modal_container" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center; backdrop-filter: blur(3px);">
-    <div class="bazi-modal-wrapper" style="position: relative; width: 90%; max-width: 800px; height: 85vh; display: flex; flex-direction: column; border-radius: 10px; padding: 20px;">
-        
-        <div id="bazi_modal_close" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:24px; color:var(--SmartThemeBodyColor, #fff); z-index: 10; opacity: 0.8;">✖</div>
-        <h2 style="text-align: center; color: #d4af37; margin-top: 0;">🔮 八字+六爻赛博排盘系统</h2>
-        
-        <!-- Tab 导航栏 -->
-        <div class="bazi-tabs-nav">
-            <button class="bazi-tab-btn active" data-tab="tab-api">⚙️ 接口配置</button>
-            <button class="bazi-tab-btn" data-tab="tab-real">🌍 三次元推演</button>
-            <button class="bazi-tab-btn" data-tab="tab-rpg">🌌 剧情跑团</button>
-            <button class="bazi-tab-btn" data-tab="tab-gua" id="tab_btn_gua">☯️ 起卦与结果</button>
-        </div>
+const extensionName = "bazi-gacha-array-test";
+const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
-        <!-- 滚动内容区 -->
-        <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
+if (typeof marked === 'undefined') {
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+    document.head.appendChild(script);
+}
+
+// ================== 前端 64卦 硬核映射表 ==================
+const hexagramMap = {
+    "111111":"乾为天", "000000":"坤为地", "100010":"水雷屯", "010001":"山水蒙", "111010":"水天需", "010111":"天水讼", "010000":"地水师", "000010":"水地比", "111011":"风天小畜", "110111":"天泽履", "111000":"地天泰", "000111":"天地否", "101111":"天火同人", "111101":"火天大有", "001000":"地山谦", "000100":"雷地豫", "100110":"泽雷随", "011001":"山风蛊", "110000":"地泽临", "000011":"风地观", "100101":"火雷噬嗑", "101001":"山火贲", "000001":"山地剥", "100000":"地雷复", "100111":"天雷无妄", "111001":"山天大畜", "100001":"山雷颐", "011110":"泽风大过", "010010":"坎为水", "101101":"离为火", "001110":"泽山咸", "011100":"雷风恒", "001111":"天山遁", "111100":"雷天大壮", "000101":"火地晋", "101000":"地火明夷", "101011":"风火家人", "110101":"火泽睽", "001010":"水山蹇", "010100":"雷水解", "110001":"山泽损", "100011":"风雷益", "111110":"泽天夬", "011111":"天风姤", "000110":"泽地萃", "011000":"地风升", "010110":"泽水困", "011010":"水风井", "101110":"泽火革", "011101":"火风鼎", "100100":"震为雷", "001001":"艮为山", "001011":"风山渐", "110100":"雷泽归妹", "101100":"雷火丰", "001101":"火山旅", "011011":"巽为风", "110110":"兑为泽", "010011":"风水涣", "110010":"水泽节", "110011":"风泽中孚", "001100":"雷山小过", "101010":"水火既济", "010101":"火水未济"
+};
+
+// ================== 追加到酒馆聊天框的核心逻辑 ==================
+function appendToChatInput(text) {
+    try {
+        const $chatInput = $('#send_textarea');
+        if ($chatInput.length) {
+            const currentVal = $chatInput.val();
+            const addition = `（${text}）`; 
+            $chatInput.val(currentVal ? currentVal + '\n' + addition : addition);
             
-            <!-- TAB 1: 接口与通用设置 -->
-            <div id="tab-api" class="bazi-tab-content active">
-                <div class="notice">🔒 <strong>隐私安全：</strong> 纯前端本地运行，测算与角色数据仅保留在设备本地，绝无外泄。</div>
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--SmartThemeBodyColor); margin-bottom: 15px;">
-                    <input id="bazi_use_st_api" type="checkbox" checked style="width: 18px; height: 18px; margin: 0;" />
-                    <span>使用酒馆当前主 API (推荐，勾选后无需填写下方独立配置)</span>
-                </label>
-                <div class="api-config" id="bazi_custom_api_block" style="display: none; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
-                    <div class="input-group"><label>API 接口地址:</label><input type="text" id="bazi_apiUrl" placeholder="例如: https://api.openai.com/v1/chat/completions"></div>
-                    <div class="input-group"><label>API Key:</label><input type="password" id="bazi_apiKey" placeholder="sk-..."></div>
-                    <div class="input-group">
-                        <label>模型 (Model):</label>
-                        <select id="bazi_modelInput">
-                            <option value="deepseek-v4-lite-web-chat">deepseek-v4-lite-web-chat</option>
-                            <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
-                            <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-                            <option value="gpt-4o">gpt-4o</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+            $chatInput[0].dispatchEvent(new Event('input', { bubbles: true }));
+            $chatInput.trigger('input');
+            $chatInput.focus();
+        } else {
+            toastr.error("⚠️ 未能找到酒馆聊天输入框！");
+        }
+    } catch (err) {
+        console.error("追加输入框报错:", err);
+    }
+}
 
-            <!-- TAB 2: 三次元现实推演 -->
-            <div id="tab-real" class="bazi-tab-content">
-                <h3 class="section-title">📜 命主基本信息 (先天八字之体)</h3>
-                <div class="flex-input input-group">
-                    <div><label>性别</label><select id="bazi_gender"><option value="女">女</option><option value="男">男</option></select></div>
-                    <div><label>阳历生日</label><input type="date" id="bazi_birthday"></div>
-                </div>
-                <div class="input-group">
-                    <label>出生地 <span id="bazi_birth-loading" style="font-size: 12px; color: #d4af37;">(加载中...)</span></label>
-                    <div class="location-group" id="bazi_birth-group">
-                        <select class="prov"><option value="">请选择省份</option></select>
-                        <select class="city"><option value="">请选择城市</option></select>
-                        <select class="dist"><option value="">请选择区县</option></select>
-                        <input type="text" class="other" placeholder="海外国家/详细地址">
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>现居住地</label>
-                    <div class="location-group" id="bazi_live-group">
-                        <select class="prov"><option value="">请选择省份</option></select>
-                        <select class="city"><option value="">请选择城市</option></select>
-                        <select class="dist"><option value="">请选择区县</option></select>
-                        <input type="text" class="other" placeholder="海外国家/详细地址">
-                    </div>
-                </div>
-                <h3 class="section-title">✨ 现实心愿</h3>
-                <div class="input-group">
-                    <label>想要许什么愿望？(如抽卡、求职、考试)</label>
-                    <textarea id="bazi_wish_real" rows="2" placeholder="例如：明天中午玩某某游戏抽卡出限定角色"></textarea>
-                </div>
-                <div class="notice">💡 提示：请先前往【☯️ 起卦与结果】标签页抛掷铜钱，再点击下方排盘。</div>
-                <!-- 现实模式专用发送按钮，固定在 Tab 2 底部 -->
-                <button id="bazi_sendBtn_Real" class="bazi-submit-btn">🙏 结印排盘 (用于现实三次元心愿)</button>
-            </div>
+window.sendRpgRequest = (actionType) => executeDivination('rpg', actionType);
 
-            <!-- TAB 3: 剧情跑团推演 -->
-            <div id="tab-rpg" class="bazi-tab-content">
-                <div class="notice" style="border-color: #8b0000; background: rgba(139,0,0,0.1);">
-                    🎲 <strong>赛博 GM 引擎：</strong> 将自动抓取当前聊天角色信息、设定与最近对话历史。<br>
-                    推演结果将自动以 <strong>（追加内容）</strong> 的形式注入底部的聊天输入框，允许你二次编辑！
-                </div>
-                <div class="input-group">
-                    <label>补充剧情细节 (非必填，可在此输入想问的具体事宜)：</label>
-                    <textarea id="bazi_rpg_extra_input" rows="2" placeholder="例如：我想趁他不注意偷走桌上的钥匙... / 门后的脚步声是谁？"></textarea>
-                </div>
-                <div class="notice">💡 提示：请先前往【☯️ 起卦与结果】标签页抛掷铜钱，再点击下方的动作检定。</div>
-                <!-- 跑团模式 4 个专属按钮，固定在 Tab 3 底部 -->
-                <div class="bazi-rpg-grid">
-                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('bond')">💘 测算羁绊 (合婚与关系)</button>
-                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('check')">🎲 剧情检定 (判定行动成功率)</button>
-                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('event')">🌪️ 突发事件 (降下世界观意外)</button>
-                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (寻找线索/物品)</button>
-                </div>
-            </div>
+// ================== 六爻起卦 ==================
+function castLiuyao() {
+    const wish = $('#bazi_wish_real').val().trim() || $('#bazi_rpg_extra_input').val().trim() || "未命名事项";
 
-            <!-- TAB 4: 起卦与输出区 -->
-            <div id="tab-gua" class="bazi-tab-content">
-                <div class="input-group">
-                    <button id="bazi_castBtn" class="bazi-cast-btn">🪙 抛掷三枚铜钱起卦 (自动6次)</button>
-                    <div id="bazi_hexagram-display" class="hexagram-container">
-                        <div class="hexagram-result-title" id="bazi_hexagram-title">本卦：XXX  |  变卦：XXX</div>
-                        <div id="bazi_hexagram-lines-box"></div>
-                    </div>
-                    <input type="hidden" id="bazi_liuyaoResultData">
-                </div>
-                
-                <div class="output-container">
-                    <div class="box" id="bazi_box-summary">
-                        <strong class="box-title">🌟 推演断语 (摘要)</strong>
-                        <div id="bazi_summary-content" class="content-area">等待起卦...</div>
-                    </div>
-                    <div class="box" id="bazi_box-hexagram">
-                        <strong class="box-title">☯️ 卦象解析</strong>
-                        <div id="bazi_hexagram-content" class="content-area">等待起卦...</div>
-                    </div>
-                    <div class="box" id="bazi_box-details">
-                        <strong class="box-title">📜 详细阵法/剧情推演步骤</strong>
-                        <div id="bazi_details-content" class="content-area">等待起卦...</div>
-                    </div>
-                </div>
-            </div>
+    $('#bazi_hexagram-lines-box').empty();
+    $('#bazi_hexagram-display').show();
 
-        </div>
-    </div>
-</div>
+    const yaoNames = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"];
+    let resultsTextForAI = "";
+    let visualHtml = ""; 
+    let originalBits = ""; 
+    let changedBits = "";  
+
+    for (let i = 0; i < 6; i++) {
+        const toss = () => (Math.random() < 0.5 ? 2 : 3); 
+        const sum = toss() + toss() + toss();
+        let symbol = ""; let mark = ""; let typeName = "";
+        if (sum === 6) { symbol = "▅▅　▅▅"; mark = "× 交"; typeName = "老阴"; originalBits += "0"; changedBits += "1"; }
+        else if (sum === 7) { symbol = "▅▅▅▅▅"; mark = "′ 单"; typeName = "少阳"; originalBits += "1"; changedBits += "1"; }
+        else if (sum === 8) { symbol = "▅▅　▅▅"; mark = "″ 拆"; typeName = "少阴"; originalBits += "0"; changedBits += "0"; }
+        else if (sum === 9) { symbol = "▅▅▅▅▅"; mark = "○ 重"; typeName = "老阳"; originalBits += "1"; changedBits += "0"; }
+
+        resultsTextForAI += `${yaoNames[i]}: ${typeName} -> 符号[${symbol}]\n`;
+        visualHtml = `<div class="hexagram-line"><span class="yao-name">${yaoNames[i]}</span><span class="yao-symbol">${symbol}</span><span class="yao-mark">${mark}</span><span class="yao-type">${typeName}</span></div>` + visualHtml; 
+    }
+
+    const benGua = hexagramMap[originalBits] || "未知卦象";
+    const bianGua = hexagramMap[changedBits] || "未知卦象";
+
+    $('#bazi_hexagram-title').text(`本卦：${benGua}  |  变卦：${bianGua}`);
+    $('#bazi_hexagram-lines-box').html(visualHtml);
+    $('#bazi_liuyaoResultData').val(`【前端推算结果】本卦：${benGua}，变卦：${bianGua}\n【抛掷明细】\n${resultsTextForAI}`);
+    $('#bazi_castBtn').text("☯️ 卦象已成 (点击可重新起卦)").css("background-color", "#8b0000");
+}
+
+// ================== 初始化与 Tab 切换 ==================
+jQuery(async () => {
+    try {
+        const uiHtml = await $.get(`${extensionFolderPath}/bazi_ui.html`);
+        $("#extensions_settings").append(uiHtml);
+
+        const modalHtml = await $.get(`${extensionFolderPath}/bazi_modal.html`);
+        $("body").append(modalHtml);
+    } catch (e) {
+        console.error("❌ 界面加载失败:", e);
+        return;
+    }
+
+    $("#bazi_open_modal_btn").on("click", () => $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast'));
+    $("#bazi_modal_close").on("click", () => $("#bazi_modal_container").fadeOut('fast'));
+    $("#bazi_modal_container").on("click", function(e) { if (e.target === this) $(this).fadeOut('fast'); });
+
+    $('.bazi-tab-btn').on('click', function() {
+        $('.bazi-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        const target = $(this).data('tab');
+        $('.bazi-tab-content').removeClass('active');
+        $(`#${target}`).addClass('active');
+        
+        if(target === 'tab-gua') {
+            const isFromReal = $('.bazi-tab-btn[data-tab="tab-real"]').hasClass('last-visited');
+            $('#bazi_sendBtn_Real').toggle(isFromReal);
+        } else {
+            $('.bazi-tab-btn').removeClass('last-visited');
+            $(this).addClass('last-visited');
+        }
+    });
+
+    const savedUseStApi = localStorage.getItem('bazi_use_st_api');
+    if (savedUseStApi !== null) $('#bazi_use_st_api').prop('checked', savedUseStApi === 'true');
+    $('#bazi_use_st_api').on('change', () => $('#bazi_use_st_api').is(':checked') ? $('#bazi_custom_api_block').slideUp() : $('#bazi_custom_api_block').slideDown());
+    if(!$('#bazi_use_st_api').is(':checked')) $('#bazi_custom_api_block').show();
+
+    $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
+    $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
+    
+    $('#bazi_castBtn').on('click', castLiuyao);
+    $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
+});
+
+// ================== 核心调度器 ==================
+async function executeDivination(mode, actionType = null) {
+    const useStApi = $('#bazi_use_st_api').is(':checked');
+    const apiUrl = $('#bazi_apiUrl').val().trim();
+    const apiKey = $('#bazi_apiKey').val().trim();
+    const liuyaoData = $('#bazi_liuyaoResultData').val();
+
+    if(!useStApi && (!apiUrl || !apiKey)) return toastr.warning("请填写自定义 API，或勾选使用酒馆主 API！");
+    if(!liuyaoData) {
+        $('.bazi-tab-btn[data-tab="tab-gua"]').click();
+        return toastr.warning("【警告】请先点击按钮抛掷三枚铜钱起卦！");
+    }
+
+    const todayDate = new Date();
+    const todayStr = `${todayDate.getFullYear()}年${todayDate.getMonth() + 1}月${todayDate.getDate()}日`;
+
+    let systemPrompt = "";
+    let userPrompt = "";
+
+    if (mode === 'real') {
+        const wish = $('#bazi_wish_real').val().trim();
+        if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
+        
+        systemPrompt = `你现在是一个精通《周易》卦爻辞及八字命理的专业人员。\n【日期推演】当前日期：${todayStr}。请确立起始日期，若凶则在7日内另择吉日...`;
+        userPrompt = `阳历生日：${$('#bazi_birthday').val()}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
+        
+    } 
+    else if (mode === 'rpg') {
+        let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
+        
+        try {
+            const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
+            if (context) {
+                userDesc = context.user_persona || "普通人类";
+                const charData = (context.characters && context.characterId) ? context.characters[context.characterId] : null;
+                if (charData) {
+                    charName = charData.name || "未知角色";
+                    charDesc = charData.description || "无详细描述";
+                }
+                if (context.chat && context.chat.length > 0) {
+                    chatHistory = context.chat.slice(-5).map(m => `${m.name || 'Unknown'}: ${m.mes || ''}`).join('\n');
+                }
+            }
+        } catch (ctxErr) {
+            console.warn("🔮 抓取酒馆上下文警告，已启用保底预设:", ctxErr);
+        }
+        
+        const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
+
+        // 防跑题锁
+        systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 严格按要求输出 JSON 格式，不要发散写小说。\n2. summary字段是你作为GM给出的简短断语。`;
+        
+        let taskDesc = "";
+        if(actionType === 'bond') {
+            taskDesc = "测算用户与角色的八字姻缘及当前羁绊状态。请在summary中给出一句极其精炼、适合作为被动设定的【羁绊断语】（例如：命理互补，金水相生，对用户有天然的信任感）。";
+        } else if(actionType === 'check') {
+            taskDesc = `对用户的行动意图【${extraInput}】进行剧情检定（大成功/成功/失败/大失败），给出判定结果与玄学原因。`;
+        } else if(actionType === 'event') {
+            taskDesc = "生成一个强烈的随机突发事件（如意外、第三者介入、环境异变），用于打破当前僵局。";
+        } else if(actionType === 'radar') {
+            taskDesc = "为用户寻找目标提供方位、五行元素相关的模糊但绝对有用的玄学雷达线索。";
+        }
+
+        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出 JSON：\n{\n  "summary": "一句话概括动作意图或羁绊设定（如果是动作判定，我将放入玩家输入框）",\n  "hexagram_interpretation": "简短六爻卦象解读",\n  "details": "详细的情境推演细节"\n}`;
+    }
+
+    $('.bazi-tab-btn[data-tab="tab-gua"]').click();
+    $('#bazi_sendBtn_Real').prop('disabled', true);
+    $('#bazi_summary-content, #bazi_hexagram-content, #bazi_details-content').html("灵力流转中...");
+
+    try {
+        let aiContentString = "";
+
+        if (useStApi) {
+            const context = typeof window.SillyTavern !== 'undefined' ? window.SillyTavern.getContext() : window;
+            if (context && context.generateRaw) {
+                aiContentString = await context.generateRaw({ systemPrompt: systemPrompt, prompt: userPrompt });
+            } else {
+                throw new Error("酒馆 API 生成函数未找到，请在配置中填写自定义 API！");
+            }
+        } else {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                body: JSON.stringify({ model: $('#bazi_modelInput').val(), messages: [ {role: "system", content: systemPrompt}, {role: "user", content: userPrompt} ], response_format: { type: "json_object" } })
+            });
+            if(!response.ok) throw new Error(await response.text());
+            const data = await response.json();
+            aiContentString = data.choices[0].message.content;
+        }
+
+        aiContentString = aiContentString.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const aiResult = JSON.parse(aiContentString);
+        
+        $('#bazi_summary-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.summary || "") : aiResult.summary);
+        $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
+        $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
+
+        if (mode === 'rpg') {
+            // 1. 追加到输入框逻辑（拦截 bond 动作）
+            if (aiResult.summary && actionType !== 'bond') {
+                appendToChatInput(aiResult.summary);
+                toastr.success("✨ GM断语已添加到输入框，可继续编辑！");
+            }
+
+            // 2. 如果是“测算羁绊” (bond)，将其永久写入角色设定 (Description) 中
+            if (actionType === 'bond' && aiResult.summary) {
+                try {
+                    if (window.TavernHelper && window.TavernHelper.updateCharacterWith) {
+                        await window.TavernHelper.updateCharacterWith('current', char => {
+                            const appendText = `\n【八字玄学羁绊】：${aiResult.summary}`;
+                            if (!char.description.includes("八字玄学羁绊")) {
+                                char.description += appendText;
+                                toastr.success("💘 姻缘羁绊已永久写入当前角色的设定(Description)中！");
+                            } else {
+                                toastr.info("💘 角色卡中已有羁绊设定，本次未重复写入。");
+                            }
+                            return char;
+                        });
+                    } else {
+                        // 兜底方案：如果没装 TavernHelper，直接改本地内存
+                        const context = typeof window.SillyTavern !== 'undefined' ? window.SillyTavern.getContext() : null;
+                        if (context && context.characters && context.characterId) {
+                            const charData = context.characters[context.characterId];
+                            if (!charData.description.includes("八字玄学羁绊")) {
+                                charData.description += `\n【八字玄学羁绊】：${aiResult.summary}`;
+                                toastr.success("💘 羁绊已写入内存 (但需要去角色编辑页点保存才能永久生效)！");
+                            } else {
+                                toastr.info("💘 角色卡中已有羁绊设定。");
+                            }
+                        }
+                    }
+                } catch (charErr) {
+                    console.error("写入角色卡失败:", charErr);
+                }
+            }
+
+            // 提示：D1 注入逻辑暂未解除封印
+        }
+
+    } catch (error) {
+        console.error("❌ 测算报错:", error);
+        $('#bazi_summary-content').html("⚠️ 测算失败。");
+        $('#bazi_details-content').html(error.message);
+    } finally {
+        $('#bazi_sendBtn_Real').prop('disabled', false);
+    }
+}

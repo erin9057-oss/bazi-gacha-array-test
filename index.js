@@ -414,7 +414,7 @@ ${liuyaoData}
             taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于八字六爻与角色世界观给出合理的玄学解读。`;
         }
 
-        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（填入一句话判定或八字姻缘设定）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（填入详细的对应推演细节多用世外高人的语气解释为什么是这样并给出建议）"\n}`;
+        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（根据任务填入一句话核心内容）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（用世外高人的说话风格根据任务内容的不同应用调整输出人称和语气。例姻缘是用作设定补充，应为无人称罗列判词；随机事件是新任务应为GM语气发布任务等）"\n}`;
     }
 
     // ============= 发送请求 =============

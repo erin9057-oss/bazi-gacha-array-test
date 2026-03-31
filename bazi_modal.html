@@ -4,7 +4,6 @@
         <div id="bazi_modal_close" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:24px; color:var(--SmartThemeBodyColor, #fff); z-index: 10; opacity: 0.8;">✖</div>
         <h2 style="text-align: center; color: #d4af37; margin-top: 0;">🔮 赛博排盘系统</h2>
         
-        <!-- Tab 导航栏 -->
         <div class="bazi-tabs-nav">
             <button class="bazi-tab-btn active" data-tab="tab-api">⚙️ 接口配置</button>
             <button class="bazi-tab-btn" data-tab="tab-real">🌍 现实气运推演</button>
@@ -12,10 +11,8 @@
             <button class="bazi-tab-btn" data-tab="tab-gua" id="tab_btn_gua">☯️ 起卦与结果</button>
         </div>
 
-        <!-- 滚动内容区 -->
         <div style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px;">
             
-            <!-- TAB 1: 接口与通用设置 -->
             <div id="tab-api" class="bazi-tab-content active">
                 <div class="notice">🔒 <strong>隐私安全：</strong> 本插件纯前端本地运行，API设置、推演内容与角色数据仅保留在设备本地，绝无外泄。</div>
                 <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--SmartThemeBodyColor); margin-bottom: 15px;">
@@ -38,7 +35,6 @@
                 </div>
             </div>
 
-            <!-- TAB 2: 现实推演 -->
             <div id="tab-real" class="bazi-tab-content">
                 <h3 class="section-title">📜 命主基本信息</h3>
                 <div class="flex-input input-group">
@@ -72,7 +68,6 @@
                 <button id="bazi_sendBtn_Real" class="bazi-submit-btn">☯️ 起卦并准备推演</button>
             </div>
 
-            <!-- TAB 3: 酒馆推演 -->
             <div id="tab-rpg" class="bazi-tab-content">
                 <div class="notice" style="border-color: #8b0000; background: rgba(139,0,0,0.1);">
                     🎲 <strong>修仙 GM 引擎：</strong> 将自动抓取当前聊天角色信息、设定与最近对话历史。<br>
@@ -83,7 +78,6 @@
                     <textarea id="bazi_rpg_extra_input" rows="2" placeholder="例如：随机事件走搞笑风类似我想趁他不注意偷走桌上的桃... / 我应该向什么方位搜查线索？"></textarea>
                 </div>
                 
-                <!-- 👇 终极修复：世界书先选书，再选条目 👇 -->
                 <div class="input-group">
                     <label>📚 附加世界书条目 (可选)</label>
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -93,30 +87,27 @@
                         </select>
                     </div>
                     
-                    <!-- 多选列表容器 -->
                     <div id="bazi_wi_list_container" style="max-height: 130px; overflow-y: auto; border: 1px solid rgba(181, 152, 101, 0.4); border-radius: 4px; padding: 10px; background-color: rgba(254, 248, 236, 0.5); display: flex; flex-direction: column; gap: 8px;">
                         <span style="font-size: 13px; color: #827869; text-align: center; font-weight: normal;">选择世界书后，此处将显示可勾选的条目...</span>
                     </div>
                 </div>
-                <!-- 👆 新增结束 👆 -->
-
+                
                 <div class="notice">💡 提示：点击下方对应玩法后，将自动为您起卦并跳转至确认面板。</div>
                 <div class="bazi-rpg-grid">
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('bond')">💘 情缘天定 (合八字算姻缘)</button>
-                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('check')">🎲 剧情检定 (没什么用，爱给自己上难度选这个，自动注入d1避免90%作弊，除非打开提示词查看器硬改)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('check')">🎲 剧情检定 (没什么用，爱给自己玩卡上难度，自动注入d1避免90%作弊除非打开提示词查看器硬改)</button>
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('event')">🌪️ 突发事件 (不知道怎么推剧情的时候选这个)</button>
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (悬疑类卡关选这个)</button>
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('other')">🎯 自由推演 (不会注入任何内容到主提示词，纯消磨时间)</button>
                 </div>
             </div>
 
-            <!-- TAB 4: 起卦与输出区 -->
             <div id="tab-gua" class="bazi-tab-content">
                 <div class="input-group">
 
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button id="bazi_castBtn" class="bazi-cast-btn" style="flex: 1; margin-top: 0;">🪙 抛掷铜钱起卦 (重新起卦)</button>
-                        <button id="bazi_executeBtn" class="bazi-submit-btn" style="flex: 1; margin-top: 0; background-color: #2e8b57 !important;">🙏 正式向大师请愿</button>
+                        <button id="bazi_executeBtn" class="bazi-submit-btn" style="flex: 1; margin-top: 0; background-color: #2e8b57 !important;">🙏 正式向AI发送推演</button>
                     </div>
 
                     <div id="bazi_hexagram-display" class="hexagram-container">

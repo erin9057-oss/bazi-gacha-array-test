@@ -1,4 +1,4 @@
-const extensionName = "bazi-gacha-array-test"; // 确保和测试文件夹同名
+const extensionName = "bazi-gacha-array-test";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 if (typeof marked === 'undefined') {
@@ -6,26 +6,6 @@ if (typeof marked === 'undefined') {
     script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
     document.head.appendChild(script);
 }
-
-// ======================================================================
-// ⚠️【请把你原本那几百行的 pcaData 和省市区联动函数贴在这里！】⚠️
-// ======================================================================
-let pcaData = {
-    // ... 这里贴你原来的省市县 JSON 数据 ...
-};
-const SPECIAL_PROVS = ["香港特别行政区", "澳门特别行政区", "台湾"];
-const OTHER_KEY = "海外及其他地区";
-
-function setupLocationGroup(prefix) {
-    // ... 这里贴你原来的 setupLocationGroup 联动逻辑 ...
-}
-
-function getLocationString(prefix) {
-    // ... 这里贴你原来的 getLocationString 提取逻辑 ...
-    return "测试地址"; // 没贴回来前临时兜底
-}
-// ======================================================================
-
 
 // ================== 前端 64卦 硬核映射表 ==================
 const hexagramMap = {
@@ -44,6 +24,8 @@ function appendToChatInput(text) {
             $chatInput[0].dispatchEvent(new Event('input', { bubbles: true }));
             $chatInput.trigger('input');
             $chatInput.focus();
+            
+            toastr.success("✨ GM断语已添加到输入框，可继续编辑！");
         } else {
             toastr.error("⚠️ 未能找到酒馆聊天输入框！");
         }
@@ -52,7 +34,6 @@ function appendToChatInput(text) {
     }
 }
 
-// 暴露给 HTML 调用的全局函数
 window.sendRpgRequest = (actionType) => executeDivination('rpg', actionType);
 
 // ================== 六爻起卦 ==================
@@ -90,7 +71,7 @@ function castLiuyao() {
     $('#bazi_castBtn').text("☯️ 卦象已成 (点击可重新起卦)").css("background-color", "#8b0000");
 }
 
-// ================== 界面初始化与全局事件绑定 ==================
+// ================== 初始化与 Tab 切换 ==================
 jQuery(async () => {
     try {
         const uiHtml = await $.get(`${extensionFolderPath}/bazi_ui.html`);
@@ -103,58 +84,29 @@ jQuery(async () => {
         return;
     }
 
-    // 【核心修复】：使用事件委托绑定点击事件，彻底解决按钮点击没反应的问题！
-    $(document).on("click", "#bazi_open_modal_btn", function() {
-        $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast');
-    });
-    
-    $(document).on("click", "#bazi_modal_close", function() {
-        $("#bazi_modal_container").fadeOut('fast');
-    });
+    $("#bazi_open_modal_btn").on("click", () => $("#bazi_modal_container").css('display', 'flex').hide().fadeIn('fast'));
+    $("#bazi_modal_close").on("click", () => $("#bazi_modal_container").fadeOut('fast'));
+    $("#bazi_modal_container").on("click", function(e) { if (e.target === this) $(this).fadeOut('fast'); });
 
-    $(document).on("click", "#bazi_modal_container", function(e) { 
-        if (e.target === this) $(this).fadeOut('fast'); 
-    });
-
-    // 绑定 Tab 切换
-    $(document).on('click', '.bazi-tab-btn', function() {
+    // 纯净版 Tab 切换：不再隐藏任何按钮！
+    $('.bazi-tab-btn').on('click', function() {
         $('.bazi-tab-btn').removeClass('active');
         $(this).addClass('active');
         const target = $(this).data('tab');
         $('.bazi-tab-content').removeClass('active');
         $(`#${target}`).addClass('active');
-        
-        if(target === 'tab-gua') {
-            const isFromReal = $('.bazi-tab-btn[data-tab="tab-real"]').hasClass('last-visited');
-            $('#bazi_sendBtn_Real').toggle(isFromReal);
-        } else {
-            $('.bazi-tab-btn').removeClass('last-visited');
-            $(this).addClass('last-visited');
-        }
     });
 
-    // 恢复配置数据
     const savedUseStApi = localStorage.getItem('bazi_use_st_api');
     if (savedUseStApi !== null) $('#bazi_use_st_api').prop('checked', savedUseStApi === 'true');
-    $(document).on('change', '#bazi_use_st_api', function() {
-        if($(this).is(':checked')) {
-            $('#bazi_custom_api_block').slideUp();
-        } else {
-            $('#bazi_custom_api_block').slideDown();
-        }
-    });
+    $('#bazi_use_st_api').on('change', () => $('#bazi_use_st_api').is(':checked') ? $('#bazi_custom_api_block').slideUp() : $('#bazi_custom_api_block').slideDown());
     if(!$('#bazi_use_st_api').is(':checked')) $('#bazi_custom_api_block').show();
 
     $('#bazi_apiUrl').val(localStorage.getItem('bazi_api_url') || '');
     $('#bazi_apiKey').val(localStorage.getItem('bazi_api_key') || '');
     
-    // 初始化省市区
-    setupLocationGroup('bazi_birth'); 
-    setupLocationGroup('bazi_live');
-
-    // 绑定测算按钮
-    $(document).on('click', '#bazi_castBtn', castLiuyao);
-    $(document).on('click', '#bazi_sendBtn_Real', () => executeDivination('real'));
+    $('#bazi_castBtn').on('click', castLiuyao);
+    $('#bazi_sendBtn_Real').on('click', () => executeDivination('real'));
 });
 
 // ================== 核心调度器 ==================
@@ -166,7 +118,7 @@ async function executeDivination(mode, actionType = null) {
 
     if(!useStApi && (!apiUrl || !apiKey)) return toastr.warning("请填写自定义 API，或勾选使用酒馆主 API！");
     if(!liuyaoData) {
-        $('.bazi-tab-btn[data-tab="tab-gua"]').click();
+        $('.bazi-tab-btn[data-tab="tab-gua"]').click(); // 自动跳到起卦页
         return toastr.warning("【警告】请先点击按钮抛掷三枚铜钱起卦！");
     }
 
@@ -181,11 +133,7 @@ async function executeDivination(mode, actionType = null) {
         if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
         
         systemPrompt = `你现在是一个精通《周易》卦爻辞及八字命理的专业人员。\n【日期推演】当前日期：${todayStr}。请确立起始日期，若凶则在7日内另择吉日...`;
-        
-        // 【核心恢复】：恢复现实模式传入省市区的逻辑
-        const birthLoc = getLocationString('bazi_birth');
-        const liveLoc = getLocationString('bazi_live');
-        userPrompt = `阳历生日：${$('#bazi_birthday').val()} 性别：${$('#bazi_gender').val()}\n出生地：${birthLoc}\n现居地：${liveLoc}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
+        userPrompt = `阳历生日：${$('#bazi_birthday').val()}\n心愿：【${wish}】\n六爻结果：\n${liuyaoData}\n请提供 JSON 格式的指导，包含 summary, hexagram_interpretation, details。`;
         
     } 
     else if (mode === 'rpg') {
@@ -210,7 +158,8 @@ async function executeDivination(mode, actionType = null) {
         
         const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
 
-        systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 严格按要求输出 JSON 格式，不要发散写小说。\n2. summary字段是你作为GM给出的简短断语。`;
+        // 🟢 【精准植入 1：防写小说护盾与任务定制】
+        systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 严格按要求输出 JSON 格式，绝不要发散写小说。\n2. summary字段是你作为GM给出的简短断语。`;
         
         let taskDesc = "";
         if(actionType === 'bond') {
@@ -226,6 +175,7 @@ async function executeDivination(mode, actionType = null) {
         userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出 JSON：\n{\n  "summary": "一句话概括动作意图或羁绊设定（如果是动作判定，我将放入玩家输入框）",\n  "hexagram_interpretation": "简短六爻卦象解读",\n  "details": "详细的情境推演细节"\n}`;
     }
 
+    // 无论从 Tab 2 还是 Tab 3 发起测算，都统一跳转到 Tab 4 看结果
     $('.bazi-tab-btn[data-tab="tab-gua"]').click();
     $('#bazi_sendBtn_Real').prop('disabled', true);
     $('#bazi_summary-content, #bazi_hexagram-content, #bazi_details-content').html("灵力流转中...");
@@ -258,40 +208,56 @@ async function executeDivination(mode, actionType = null) {
         $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
         $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
 
-        if (mode === 'rpg') {
-            // 1. 追加到输入框逻辑（拦截 bond 动作）
-            if (aiResult.summary && actionType !== 'bond') {
+        // 🟢 【精准植入 2：羁绊写入角色卡，且阻止发往输入框】
+        if (mode === 'rpg' && aiResult.summary) {
+            if (actionType !== 'bond') {
+                // 非羁绊动作，扔进输入框
                 appendToChatInput(aiResult.summary);
-                toastr.success("✨ GM断语已添加到输入框，可继续编辑！");
-            }
-
-            // 2. 如果是“测算羁绊” (bond)，将其永久写入角色设定 (Description) 中
-            if (actionType === 'bond' && aiResult.summary) {
+            } else {
+                // 羁绊测算，拦截输入框，静默写入角色卡
                 try {
                     if (window.TavernHelper && window.TavernHelper.updateCharacterWith) {
                         await window.TavernHelper.updateCharacterWith('current', char => {
                             const appendText = `\n【八字玄学羁绊】：${aiResult.summary}`;
                             if (!char.description.includes("八字玄学羁绊")) {
                                 char.description += appendText;
-                                toastr.success("💘 姻缘羁绊已永久写入当前角色的设定(Description)中！");
+                                toastr.success("💘 姻缘羁绊已永久写入当前角色设定 (Description) 中！");
                             } else {
                                 toastr.info("💘 角色卡中已有羁绊设定，本次未重复写入。");
                             }
                             return char;
                         });
-                    } else {
-                        // 兜底方案：如果没装 TavernHelper，直接改本地内存
-                        const context = typeof window.SillyTavern !== 'undefined' ? window.SillyTavern.getContext() : null;
-                        if (context && context.characters && context.characterId) {
-                            const charData = context.characters[context.characterId];
-                            if (!charData.description.includes("八字玄学羁绊")) {
-                                charData.description += `\n【八字玄学羁绊】：${aiResult.summary}`;
-                                toastr.success("💘 羁绊已写入内存 (但需要去角色编辑页点保存才能永久生效)！");
-                            } else {
-                                toastr.info("💘 角色卡中已有羁绊设定。");
-                            }
-                        }
-                    }
+                    // ...前面的代码...
+} else {
+    // 兜底方案：如果没装 TavernHelper，直接改本地内存并【强制触发硬盘保存】
+    const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
+    if (context && context.characters && context.characterId) {
+        const charData = context.characters[context.characterId];
+        
+        if (!charData.description.includes("八字玄学羁绊")) {
+            // 1. 修改内存
+            charData.description += `\n【八字玄学羁绊】：${aiResult.summary}`;
+            
+            // 2. 尝试同步更新到可能开着的 UI 文本框上 (防止玩家刚好停在编辑页，看到旧数据)
+            const $descBox = $('#character_popup_description');
+            if ($descBox.length) {
+                $descBox.val(charData.description);
+            }
+
+            // 3. ✨ 核心大招：强行呼叫酒馆底层的保存函数，直接写入硬盘文件！
+            if (typeof window.saveCharacterDebounced === 'function') {
+                window.saveCharacterDebounced();
+                toastr.success("💘 羁绊已通过原生接口永久写入角色卡，并已保存到本地！");
+            } else {
+                toastr.success("💘 羁绊已写入内存 (未能自动保存，请手动触发)！");
+            }
+            
+        } else {
+            toastr.info("💘 角色卡中已有羁绊设定。");
+        }
+    }
+}
+
                 } catch (charErr) {
                     console.error("写入角色卡失败:", charErr);
                 }

@@ -9,7 +9,7 @@
 
 /* 🌟 样式隔离罩：全面恢复酒馆原生主题自适应，仅保留半透明兜底 */
 .bazi-modal-wrapper { 
-    font-family: inherit; /* 跟随酒馆全局字体 */
+    font-family: inherit; 
     background-color: var(--SmartThemeBackgroundColor, rgba(30, 30, 30, 0.95)); 
     color: var(--SmartThemeBodyColor, #eee);
     text-align: left;
@@ -17,150 +17,163 @@
     border: 1px solid var(--SmartThemeQuoteColor, #444);
 }
 
+/* 水墨金标题 */
 .bazi-modal-wrapper h2 {
-    color: var(--SmartThemeBodyColor);
-    text-shadow: 0 0 5px var(--SmartThemeBlurTintColor);
+    color: #b59865 !important;
+    border-bottom: 1px solid var(--SmartThemeQuoteColor, rgba(181, 152, 101, 0.3)); 
+    padding-bottom: 10px;
 }
 
 /* --- 全新 Tab 导航样式 (完美对齐边缘) --- */
 .bazi-tabs-nav {
-    display: flex; 
-    width: 100%;
+    display: flex; flex-wrap: nowrap;
+    width: 100%; gap: 2px;
     border-bottom: 2px solid var(--SmartThemeQuoteColor, #444); 
     margin-bottom: 20px;
 }
 .bazi-tab-btn {
     flex: 1; /* 平分宽度，对齐边缘 */
-    padding: 12px 5px; 
+    padding: 10px 2px; 
     text-align: center; /* 居中文字 */
     cursor: pointer; 
     background: transparent; 
     color: var(--SmartThemeBodyColor);
     border: none; 
     border-bottom: 3px solid transparent; 
-    font-size: 14px; 
+    font-size: 13px; 
     font-weight: bold;
     opacity: 0.5; 
     transition: all 0.2s;
     line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bazi-tab-btn:hover { opacity: 1; background-color: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.05)); }
-.bazi-tab-btn.active { opacity: 1; border-bottom-color: var(--SmartThemeBodyColor, #fff); }
+.bazi-tab-btn.active { opacity: 1; color: #b59865; border-bottom-color: #b59865; }
+
 .bazi-tab-content { display: none; animation: fadeIn 0.3s; }
 .bazi-tab-content.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 
 .bazi-modal-wrapper .section-title {
-    border-bottom: 1px solid var(--SmartThemeQuoteColor, #555); 
-    color: var(--SmartThemeBodyColor); 
+    border-bottom: 1px dashed var(--SmartThemeQuoteColor, #555); 
+    color: #b59865; 
     padding-bottom: 5px; margin-top: 15px; margin-bottom: 15px; font-size: 16px; font-weight: bold;
 }
 
 .bazi-modal-wrapper .input-group { margin-bottom: 15px; }
-.bazi-modal-wrapper label { font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px; opacity: 0.9; }
+.bazi-modal-wrapper label { font-weight: bold; font-size: 13px; display: block; margin-bottom: 6px; opacity: 0.9; }
 
-/* 🌟 输入框统一高度对齐 */
+/* 🌟 输入框统一高度对齐，原生去皮 */
 .bazi-modal-wrapper input[type="text"], 
 .bazi-modal-wrapper input[type="password"], 
 .bazi-modal-wrapper input[type="date"], 
 .bazi-modal-wrapper select { 
     width: 100%; 
-    height: 38px; /* 强制所有单行输入框和下拉菜单高度绝对一致 */
-    padding: 8px 10px; 
-    border: 1px solid var(--SmartThemeQuoteColor, #555); 
-    border-radius: 6px; 
-    font-family: inherit; font-size: 14px;
-    background-color: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.4)) !important;
+    height: 40px; /* 强制所有单行框绝对等高 */
+    line-height: normal;
+    padding: 0 10px; margin: 0;
+    border: 1px solid var(--SmartThemeQuoteColor, #666); 
+    border-radius: 4px; font-family: inherit; font-size: 14px;
+    background-color: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.2)) !important;
     color: var(--SmartThemeBodyColor, #fff) !important;
-    outline: none;
+    outline: none; -webkit-appearance: none; appearance: none;
 }
+/* 给 select 和 date 补回一个好看的下拉小箭头 */
+.bazi-modal-wrapper select, .bazi-modal-wrapper input[type="date"] {
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+    background-repeat: no-repeat; background-position: right 8px center; padding-right: 30px;
+}
+.bazi-modal-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
+    background: transparent; bottom: 0; color: transparent; cursor: pointer; height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
+}
+.bazi-modal-wrapper input[type="date"] { position: relative; }
+
 .bazi-modal-wrapper textarea {
-    width: 100%; 
-    padding: 10px; 
-    border: 1px solid var(--SmartThemeQuoteColor, #555); 
-    border-radius: 6px; 
+    width: 100%; padding: 10px; 
+    border: 1px solid var(--SmartThemeQuoteColor, #666); border-radius: 4px; 
     font-family: inherit; font-size: 14px;
-    background-color: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.4)) !important;
+    background-color: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.2)) !important;
     color: var(--SmartThemeBodyColor, #fff) !important;
-    outline: none;
-    resize: vertical;
+    outline: none; resize: vertical; line-height: 1.5;
 }
 
-.bazi-modal-wrapper .location-group { display: flex; gap: 10px; flex-wrap: wrap; }
-.bazi-modal-wrapper .location-group select { flex: 1; min-width: 30%; }
-.bazi-modal-wrapper .location-group input { flex: 1; min-width: 60%; display: none; } 
-.bazi-modal-wrapper .flex-input { display: flex; gap: 10px; }
-.bazi-modal-wrapper .flex-input > div { flex: 1; }
+.bazi-modal-wrapper .location-group { display: flex; gap: 8px; flex-wrap: nowrap; }
+.bazi-modal-wrapper .location-group select { flex: 1; min-width: 0; }
+.bazi-modal-wrapper .location-group input { flex: 1; min-width: 0; display: none; } 
+.bazi-modal-wrapper .flex-input { display: flex; gap: 10px; align-items: flex-end;}
+.bazi-modal-wrapper .flex-input > div { flex: 1; min-width: 0; }
 
-/* 🌟 按钮组统一高度与主题适配 */
-.bazi-modal-wrapper .bazi-submit-btn, 
-.bazi-modal-wrapper .bazi-cast-btn, 
+/* 🌟 RPG 按钮改为 5 行单列，自适应高度，两端对齐 */
+.bazi-rpg-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
 .bazi-rpg-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 42px; /* 强制按钮高度一致 */
-    color: var(--SmartThemeBodyColor, #fff) !important; 
-    border: 1px solid var(--SmartThemeQuoteColor, #555); 
-    border-radius: 6px;
-    background-color: var(--SmartThemeBlurTintColor, rgba(60,60,60,0.8)); /* 恢复酒馆原生底色 */
-    cursor: pointer; font-size: 14.5px; font-weight: bold; width: 100%; margin-top: 10px;
-    transition: all 0.2s;
+    width: 100%; height: auto !important; min-height: 48px;
+    padding: 12px 15px !important; font-size: 14.5px; line-height: 1.5;
+    text-align: justify; /* 两端对齐排版 */
+    border: 1px solid var(--SmartThemeQuoteColor, rgba(255,255,255,0.1));
+    border-radius: 6px; color: #eee !important; margin: 0;
+    cursor: pointer; transition: all 0.2s; white-space: normal !important;
+    display: block !important;
 }
-.bazi-modal-wrapper .bazi-submit-btn:hover, 
-.bazi-modal-wrapper .bazi-cast-btn:hover, 
-.bazi-rpg-btn:hover { 
-    filter: brightness(1.3); 
-    background-color: var(--SmartThemeQuoteColor, rgba(80,80,80,0.8)); 
-}
-.bazi-modal-wrapper .bazi-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.bazi-rpg-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
 
-/* 🌟 RPG 按钮改为 5 行单列 */
-.bazi-rpg-grid { 
-    display: flex; 
-    flex-direction: column; /* 纵向单列排布 */
-    gap: 10px; 
-    margin-top: 15px; 
+/* 水墨高级调色盘 (半透明，不刺眼) */
+.bazi-rpg-btn:nth-child(1) { background-color: rgba(166, 83, 90, 0.8) !important; } /* 胭脂 */
+.bazi-rpg-btn:nth-child(2) { background-color: rgba(82, 95, 110, 0.8) !important; } /* 靛青 */
+.bazi-rpg-btn:nth-child(3) { background-color: rgba(92, 122, 107, 0.8) !important; } /* 竹青 */
+.bazi-rpg-btn:nth-child(4) { background-color: rgba(181, 137, 83, 0.8) !important; } /* 秋香 */
+.bazi-rpg-btn:nth-child(5) { background-color: rgba(74, 76, 78, 0.9) !important; }   /* 苍灰 */
+
+/* 🌟 Tab 4 底部按钮完美并排等大 */
+.bazi-modal-wrapper .bazi-cast-btn, 
+.bazi-modal-wrapper .bazi-submit-btn {
+    height: 46px !important; /* 强制高度一致 */
+    display: flex !important; align-items: center; justify-content: center;
+    padding: 0 10px; border: 1px solid var(--SmartThemeQuoteColor, rgba(255,255,255,0.1)); border-radius: 6px;
+    color: #fff !important; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%;
+    transition: all 0.2s; margin-top: 0 !important;
 }
-.bazi-rpg-btn { margin-top: 0; }
+.bazi-cast-btn { background-color: rgba(130, 120, 105, 0.8) !important; } /* 枯岩色 */
+.bazi-submit-btn { background-color: rgba(82, 111, 88, 0.9) !important; } /* 水墨松绿 */
+.bazi-cast-btn:hover, .bazi-submit-btn:hover { filter: brightness(1.2); }
+.bazi-submit-btn:disabled { background-color: rgba(100, 100, 100, 0.5) !important; color: #999 !important; cursor: not-allowed; }
+
+#bazi_sendBtn_Real { margin-top: 10px !important; }
 
 /* --- 六爻 UI --- */
 .bazi-modal-wrapper .hexagram-container {
-    background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.2)); 
-    border: 1px dashed var(--SmartThemeQuoteColor, #555); border-radius: 8px;
+    background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.1)); 
+    border: 1px dashed #b59865; border-radius: 6px;
     padding: 20px 10px; text-align: center; display: none; margin-top: 10px;
 }
-.bazi-modal-wrapper .hexagram-result-title { font-weight: bold; margin-bottom: 20px; font-size: 16px; }
+.bazi-modal-wrapper .hexagram-result-title { font-weight: bold; color: #b59865; margin-bottom: 15px; font-size: 16px; }
 .bazi-modal-wrapper .hexagram-line {
-    font-family: monospace; display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 8px; 
+    font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 8px; 
 }
 .bazi-modal-wrapper .hexagram-line span { white-space: nowrap; flex-shrink: 0; }
-.bazi-modal-wrapper .hexagram-line span.yao-name { font-size: 14px; opacity:0.7; width: 40px; text-align: right; }
-.bazi-modal-wrapper .hexagram-line span.yao-symbol { font-size: 24px; font-weight: bold; width: 130px; letter-spacing: -1px; text-align: center; line-height: 1; }
-.bazi-modal-wrapper .hexagram-line span.yao-mark { font-size: 16px; font-weight: bold; width: 50px; text-align: left; }
-.bazi-modal-wrapper .hexagram-line span.yao-type { font-size: 14px; opacity:0.8; width: 40px; text-align: left; }
+.bazi-modal-wrapper .hexagram-line span.yao-name { font-size: 14px; color: var(--SmartThemeBodyColor); opacity:0.7; width: 40px; text-align: right; }
+.bazi-modal-wrapper .hexagram-line span.yao-symbol { font-size: 24px; font-weight: bold; color: var(--SmartThemeBodyColor); width: 130px; letter-spacing: -1px; text-align: center; line-height: 1; }
+.bazi-modal-wrapper .hexagram-line span.yao-mark { font-size: 16px; font-weight: bold; color: #b59865; width: 50px; text-align: left; }
+.bazi-modal-wrapper .hexagram-line span.yao-type { font-size: 14px; color: var(--SmartThemeBodyColor); opacity:0.8; width: 40px; text-align: left; }
 
 /* 🌟 输出区 */
-.bazi-modal-wrapper .output-container { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+.bazi-modal-wrapper .output-container { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
 .bazi-modal-wrapper .box { 
-    flex: 1; min-width: 250px; 
-    border: 1px solid var(--SmartThemeQuoteColor, #444); 
-    padding: 15px; border-radius: 8px; 
-    background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.2)); 
+    border: 1px solid var(--SmartThemeQuoteColor, #555); 
+    padding: 15px; border-radius: 6px; 
+    background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.15)); 
 }
-.bazi-modal-wrapper #bazi_box-details { flex-basis: 100%; }
 .bazi-modal-wrapper .box strong.box-title { 
-    display: block; margin-bottom: 10px; 
-    border-bottom: 1px dashed var(--SmartThemeQuoteColor, #666); 
+    display: block; margin-bottom: 10px; color: #b59865; 
+    border-bottom: 1px dashed var(--SmartThemeQuoteColor, #555); 
     padding-bottom: 5px; font-size: 15px; 
 }
 
 /* Markdown 渲染优化 */
-.bazi-modal-wrapper .content-area { font-size: 14px; line-height: 1.6; word-break: break-all; }
-.bazi-modal-wrapper .content-area h1, .bazi-modal-wrapper .content-area h2, .bazi-modal-wrapper .content-area h3 { font-size: 15px; margin: 15px 0 8px 0; border-bottom: 1px dashed var(--SmartThemeQuoteColor, #555); padding-bottom: 4px; }
+.bazi-modal-wrapper .content-area { font-size: 14px; line-height: 1.6; word-break: break-all; opacity: 0.9; }
+.bazi-modal-wrapper .content-area h1, .bazi-modal-wrapper .content-area h2, .bazi-modal-wrapper .content-area h3 { font-size: 15px; color: #b59865; margin: 15px 0 8px 0; border-bottom: 1px dashed var(--SmartThemeQuoteColor, #555); padding-bottom: 4px; }
 .bazi-modal-wrapper .content-area p { margin: 8px 0; }
 .bazi-modal-wrapper .content-area ul, .bazi-modal-wrapper .content-area ol { margin: 8px 0; padding-left: 20px; }
 .bazi-modal-wrapper .content-area li { margin-bottom: 5px; }
 .bazi-modal-wrapper .content-area strong { background: var(--SmartThemeQuoteColor, rgba(255,255,255,0.1)); padding: 2px 4px; border-radius: 3px; font-weight: bold; }
-.bazi-modal-wrapper .content-area blockquote { border-left: 4px solid var(--SmartThemeQuoteColor, #555); margin: 10px 0; padding-left: 10px; background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.05)); }
-.bazi-modal-wrapper .notice { font-size: 12px; background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.2)); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid var(--SmartThemeQuoteColor, #555); }
+.bazi-modal-wrapper .content-area blockquote { border-left: 3px solid #b59865; margin: 10px 0; padding-left: 10px; background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.05)); }
+.bazi-modal-wrapper .notice { font-size: 12.5px; background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.1)); padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid var(--SmartThemeQuoteColor, #555); line-height: 1.5; opacity: 0.85; }

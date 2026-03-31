@@ -92,7 +92,7 @@ function appendToChatInput(text) {
             $chatInput[0].dispatchEvent(new Event('input', { bubbles: true }));
             $chatInput.trigger('input');
             $chatInput.focus();
-            toastr.success("✨ GM断语已添加到输入框，详细细节已作为 D1 潜入后台！");
+            toastr.success("✨ GM推演已添加到输入框");
         } else {
             toastr.error("⚠️ 未能找到酒馆聊天输入框！");
         }
@@ -173,8 +173,8 @@ function castLiuyao() {
     const bianGua = hexagramMap[changedBits] || "未知卦象";
     $('#bazi_hexagram-title').text(`本卦：${benGua}  |  变卦：${bianGua}`);
     $('#bazi_hexagram-lines-box').html(visualHtml);
-    $('#bazi_liuyaoResultData').val(`【前端推算结果】本卦：${benGua}，变卦：${bianGua}\n【抛掷明细】\n${resultsTextForAI}`);
-    $('#bazi_castBtn').text("☯️ 对卦象不满意？点击重新起卦").css("background-color", "#666");
+    $('#bazi_liuyaoResultData').val(`【前端推算结果】本卦：${benGua}，变卦：${bianGua}\n【抛掷结果】\n${resultsTextForAI}`);
+    $('#bazi_castBtn').text("☯️ 心诚则灵 点击重新起卦").css("background-color", "#666");
 }
 
 // ================== 前置准备调度器 (绑定在Tab 2/3 的按钮上) ==================
@@ -188,9 +188,9 @@ function prepareDivination(mode, actionType = null) {
         const birthPlace = getLocationString('bazi_birth');
         const livePlace = getLocationString('bazi_live');
 
-        if(!wish) return toastr.warning("请在三次元标签页填写现实心愿！");
-        if(!birthday) return toastr.warning("请选择阳历生日！");
-        if(!birthPlace || !livePlace) return toastr.warning("请完整填写出生地和现居地！");
+        if(!wish) return toastr.warning("请填写现实心愿");
+        if(!birthday) return toastr.warning("请选择阳历生日");
+        if(!birthPlace || !livePlace) return toastr.warning("请完整填写出生地和现居地");
         
         // 保存数据方便下次自动填充
         localStorage.setItem('bazi_gender', $('#bazi_gender').val());
@@ -198,7 +198,7 @@ function prepareDivination(mode, actionType = null) {
     } else if (mode === 'rpg') {
         const extraInput = $('#bazi_rpg_extra_input').val().trim();
         if ((actionType === 'check' || actionType === 'other') && !extraInput) {
-            return toastr.warning("该玩法需要您先在文本框填写具体的行动意图或需求！");
+            return toastr.warning("推演需要您先在文本框填写具体的愿望");
         }
     }
 
@@ -210,7 +210,7 @@ function prepareDivination(mode, actionType = null) {
 
     // 4. 自动跳到 Tab 4
     $('.bazi-tab-btn[data-tab="tab-gua"]').click();
-    toastr.success("☯️ 卦象已自动生成！请确认后点击【正式发送推演】交由AI结印。");
+    toastr.success("☯️ 卦象已自动生成！请确认后点击【正式发送推演】交由大师结印。");
 }
 
 // ================== 系统初始化 ==================
@@ -286,13 +286,13 @@ jQuery(async () => {
     setupLocationGroup('bazi_birth');
     setupLocationGroup('bazi_live');
     
-    // 🟢 按钮逻辑重新洗牌
+
     $('#bazi_castBtn').on('click', castLiuyao); // 这是在Tab4点击重新抛掷的按钮
 
-    // 把原先 Tab2 的发送按钮变成“准备推演”按钮
+
     $('#bazi_sendBtn_Real').text("☯️ 起卦并准备推演").off('click').on('click', () => prepareDivination('real'));
 
-    // 🟢 在 Tab4 动态注入一个全局统一的“正式发送推演”按钮 (无需你改 HTML！)
+
     if ($('#bazi_executeBtn').length === 0) {
         // 将执行按钮直接加在重新起卦按钮的后面
         $('#bazi_castBtn').after('<button id="bazi_executeBtn" style="margin-left: 10px; background-color: #2e8b57; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;">🙏 正式向AI发送推演</button>');
@@ -305,7 +305,7 @@ async function executePendingDivination() {
     const { mode, actionType } = pendingDivination;
 
     if (!mode) {
-        return toastr.warning("请先在 三次元 或 二次元 标签页填写需求并点击起卦！");
+        return toastr.warning("请先在 现实推演 或 角色卡推演 标签页填写需求并点击起卦！");
     }
 
     const useStApi = $('#bazi_use_st_api').is(':checked');
@@ -360,8 +360,8 @@ ${liuyaoData}
 
 请你结合四柱八字大盘与上述已推算好的六爻本卦/变卦，根据你所熟读的书籍经验学习一下，具体在什么时间，在家里朝向哪方，口号什么的，根据常见谷子五行分类如何利用元素相关谷子摆阵，能让【${wish}】比较欧？
 
-【大师测算准则】
-1. 时辰和朝向必须反复测算。
+【以下内容务必遵守】
+1. 时辰和朝向必须反复测算至少5次。
 2. 口号必须结合愿望，避免生僻字，简洁好记。
 3. 如果遇到突发情况，请在总结中提供调整方案。
 
@@ -395,19 +395,23 @@ ${liuyaoData}
         
         const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
 
-        systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“赛博算命GM”。你需要结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演。\n【核心准则】\n1. 必须输出合法、纯净的 JSON 格式！绝对不要在 JSON 里加任何 // 注释！\n2. 不要发散写小说。summary字段是你作为GM给出的简短断语。`;
+        systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“修仙GM”。你精通《周易》卦爻辞及体用生克之法，且深谙中国传统八字命理的专业研究人员。你熟读穷通宝典、三命通会、滴天髓、渊海子平、千里命稿、协纪辨方书、果老星宗、子平真诠、神峰通考等一系列书籍。
+在传统命理的架构中，八字与六爻对应着宏观的“体”与微观的“用”。结合角色的底层设定、近期聊天记录，以及用户抛出的六爻卦象对后续剧情进行推演,你需严格遵循以下规则：
+第一，理清尺度：八字是先天定局加流年演播，定大势。六爻讲究“无事不占，不动不占”，捕捉起心动念瞬间的微观气运。
+第二，拒绝线性思维：绝不能因八字走财运，就判定用户其她所有博弈皆稳赢。若六爻显现财爻受克或兄弟劫财，依然会翻车。“八字决定能赢多少，六爻决定这一把输赢”。
+第三，必须严格遵循“先观命理之大势，再决行事之进退”的固定次序（先命后卜）。\n此外，你必须：\n1. 必须输出合法、纯净的 JSON 格式！绝对不要在 JSON 里加任何 // 注释！\n2. 不要发散写小说。summary字段是你作为GM给出的推演精华。`;
         
         let taskDesc = "";
         if(actionType === 'bond') {
-            taskDesc = "测算用户与角色的八字姻缘及当前羁绊状态。请在summary中给出一句极其精炼、适合作为被动设定的【羁绊断语】（例如：命理互补，金水相生，对用户有天然的信任感）。";
+            taskDesc = "根据【角色设定】和【用户设定】测算<user>与角色的八字（如果信息不够可以参考用户阳历生日 ${birthday} 出生时间 ${birthTime} ),推演姻缘及当前羁绊状态。请在summary中结合双方八字，本卦以及变卦，给出一句凝练、适合作为被动设定的合八字结果（例如：命理互补，金水相生，对<user>有天然的信任）。";
         } else if(actionType === 'check') {
-            taskDesc = `对用户的行动意图【${extraInput}】进行剧情检定（大成功/成功/失败/大失败），给出判定结果与玄学原因。`;
+            taskDesc = `对【近期记录】中的剧情进展和【${extraInput}】的补充进行剧情检定（大成功/成功/失败/大失败），给出判定结果与玄学原因。`;
         } else if(actionType === 'event') {
-            taskDesc = "生成一个强烈的随机突发事件（如意外、第三者介入、环境异变），用于打破当前僵局。";
+            taskDesc = "结合八字本卦以及变卦，在【近期记录】末尾当前剧情点生成一个随机突发事件（如意外、第三者介入、环境异变），来推进剧情。必须符合推演结果";
         } else if(actionType === 'radar') {
-            taskDesc = "为用户寻找目标提供方位、五行元素相关的模糊但绝对有用的玄学雷达线索。";
+            taskDesc = "结合八字本卦以及变卦为用户寻找目标提供方位、五行元素相关的模糊但绝对有用的玄学雷达线索。并给出这个线索有用的玄学理由";
         } else if(actionType === 'other') {
-            taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于现实八字六爻与角色世界观给出合理的玄学解读。`;
+            taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于八字六爻与角色世界观给出合理的玄学解读。`;
         }
 
         userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（填入一句话判定或羁绊设定）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（填入详细的情境推演细节）"\n}`;

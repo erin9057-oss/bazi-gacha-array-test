@@ -287,14 +287,15 @@ jQuery(async () => {
     }
     $('#bazi_executeBtn').off('click').on('click', executePendingDivination);
 
-    // 🌟 终极修复：酒馆原生 API 两步法抓取世界书 🌟
+    // 🌟 第一步修复：一键拉取酒馆助手的所有世界书
     $('#bazi_fetch_wi_books_btn').off('click').on('click', async () => {
         try {
-            let books = window.world_names || [];
-            if (books.length === 0) {
-                const res = await fetch('/api/worldinfo/get');
-                if (res.ok) books = await res.json();
+            const fnGetWorldbookNames = resolveApi('getWorldbookNames');
+            if (!fnGetWorldbookNames) {
+                toastr.error("未找到酒馆助手 getWorldbookNames 接口，请确认已安装并更新酒馆助手。");
+                return;
             }
+            const books = await fnGetWorldbookNames();
             if (!books || books.length === 0) {
                 toastr.warning("未找到任何世界书");
                 return;
@@ -309,6 +310,7 @@ jQuery(async () => {
         }
     });
 
+    // 🌟 选中世界书后，列出所有条目让你打勾
     $('#bazi_wi_book_select').off('change').on('change', async function() {
         const bookName = $(this).val();
         const $container = $('#bazi_wi_list_container');
@@ -318,27 +320,20 @@ jQuery(async () => {
         }
         $container.html('<span style="font-size: 13px;">正在翻阅古籍，请稍候...</span>');
         try {
-            const res = await fetch('/api/worldinfo/get', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name: bookName })
-            });
-            const bookData = await res.json();
+            const fnGetWorldbook = resolveApi('getWorldbook');
+            if (!fnGetWorldbook) return;
+            const entries = await fnGetWorldbook(bookName);
             $container.empty();
             
-            let entryArray = [];
-            if (bookData && typeof bookData === 'object') {
-                if (bookData.entries) entryArray = Object.values(bookData.entries);
-                else entryArray = Object.values(bookData); 
-            }
-            
-            if (entryArray.length === 0) {
+            if (!entries || entries.length === 0) {
                 $container.html('<span style="font-size: 13px; color: #A6535A;">这本世界书是空的。</span>'); 
                 return;
             }
             
-            entryArray.forEach(entry => {
+            entries.forEach(entry => {
                 if (!entry || !entry.content) return;
-                let label = entry.comment || (entry.key ? entry.key.join(', ') : '未命名条目');
+                // 优化命名显示
+                let label = entry.comment || (entry.keys && entry.keys.length ? entry.keys.join(', ') : '未命名条目');
                 if(label.length > 25) label = label.substring(0, 25) + '...'; 
                 const checkboxHtml = `
                     <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: normal; margin-bottom: 0; color: #1a1a1a;">
@@ -348,7 +343,7 @@ jQuery(async () => {
                 `;
                 $container.append(checkboxHtml);
             });
-            toastr.success(`✅ 读取成功！共有 ${entryArray.length} 个条目，请在下方勾选`);
+            toastr.success(`✅ 读取成功！共有 ${entries.length} 个条目，请在下方勾选`);
         } catch(e) { 
             console.error(e);
             $container.html('<span style="font-size: 13px; color: #A6535A;">❌ 读取条目失败。</span>'); 
@@ -387,6 +382,7 @@ async function executePendingDivination() {
         const wish = $('#bazi_wish_real').val().trim();
         const birthPlace = getLocationString('bazi_birth');
         const livePlace = getLocationString('bazi_live');
+
         const gameInfo = extractGameContext(wish);
 
         systemPrompt = `你现在是一个精通《周易》卦爻辞及体用生克之法，且深谙中国传统八字命理的专业研究人员。你熟读穷通宝典、三命通会、滴天髓、渊海子平、千里命稿、协纪辨方书、果老星宗、子平真诠、神峰通考等一系列书籍。
@@ -429,28 +425,32 @@ ${liuyaoData}
 }`;
     } 
     else if (mode === 'rpg') {
-        let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
+        let charName = "未知角色", charDesc = "未抓取到设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
         try {
-            // 原生提取角色信息
-            if (typeof window.this_chid !== 'undefined' && window.characters && window.characters[window.this_chid]) {
-                const char = window.characters[window.this_chid];
-                charName = char.name || "未知角色";
-                charDesc = char.description || "无详细描述";
+            // 🌟 第二步修复：无敌版上下文抓取 (使用宏解析)
+            const fnSub = resolveApi('substitudeMacros');
+            if (fnSub) {
+                charName = fnSub('{{char}}');
+                charDesc = fnSub('{{description}}');
+                userDesc = fnSub('{{persona}}');
+            } else {
+                // 兜底方案
+                const fnGetCharData = resolveApi('getCharData');
+                if (fnGetCharData) {
+                    const trueCharData = fnGetCharData('current');
+                    if (trueCharData) {
+                        charName = trueCharData.name || charName;
+                        charDesc = trueCharData.description || charDesc;
+                    }
+                }
             }
-            // 提取聊天
+
             const fnGetChatMessages = resolveApi('getChatMessages');
             if (fnGetChatMessages) {
                 const msgs = fnGetChatMessages('-5', { role: 'all' });
                 if (msgs && msgs.length > 0) {
-                    chatHistory = msgs.map(m => `${m.name || 'Unknown'}: ${m.message || ''}`).join('\n');
+                    chatHistory = msgs.map(m => `${m.name || 'Unknown'}: ${m.message || m.mes || ''}`).join('\n');
                 }
-            }
-
-            // 🌟 终极修复：原生用户设定精准扒取
-            if (typeof window.getPersona === 'function') userDesc = window.getPersona() || userDesc;
-            if (userDesc === "普通人类" && typeof window.personas !== 'undefined' && window.settings) {
-                let p = window.personas[window.settings.persona_uid];
-                if (p) userDesc = p.persona || p.description || userDesc;
             }
         } catch (ctxErr) {
             console.warn("🔮 抓取酒馆上下文警告:", ctxErr);
@@ -465,7 +465,7 @@ ${liuyaoData}
         });
         
         if (selectedWIs.length > 0) {
-            wiContextStr = `\n【用户手动附加的世界书设定】\n${selectedWIs.join('\n\n')}\n`;
+            wiContextStr = `\n【用户手动附加的当前世界书设定】\n${selectedWIs.join('\n\n')}\n`;
         }
 
         systemPrompt = `【停止小说续写，仅推演八字六爻】\n你现在是一个服务于TRPG文本扮演的“修仙GM”。你精通《周易》卦爻辞及体用生克之法，且深谙中国传统八字命理的专业研究人员。你熟读穷通宝典、三命通会、滴天髓、渊海子平、千里命稿、协纪辨方书、果老星宗、子平真诠、神峰通考等一系列书籍。
@@ -488,7 +488,7 @@ ${liuyaoData}
             taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于八字六爻与角色世界观给出合理的玄学解读。`;
         }
 
-        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}${wiContextStr}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（根据任务填入一句话核心内容）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（用世外高人的说话风格根据任务内容的不同应用调整输出人称和语气。例姻缘是用作设定补充，应为无人称罗列判词；随机事件是新任务应为GM语气发布任务等）"\n}`;
+        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】(性别:${gender} / 生日:${birthday} / 时辰:${birthTime})\n${userDesc}${wiContextStr}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（根据任务填入一句话核心内容）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（用世外高人的说话风格根据任务内容的不同应用调整输出人称和语气。例姻缘是用作设定补充，应为无人称罗列判词；随机事件是新任务应为GM语气发布任务等）"\n}`;
     }
 
     // ============= 发送请求 =============
@@ -543,6 +543,7 @@ ${liuyaoData}
 
         // ============= 后续动作分配 =============
         const fnInjectPrompts = resolveApi('injectPrompts');
+        const execSlash = resolveApi('executeSlashCommandsWithOptions');
 
         if (mode === 'rpg' && aiResult.summary) {
             if (actionType === 'other') {
@@ -550,6 +551,10 @@ ${liuyaoData}
             } 
             else if (actionType !== 'bond') {
                 appendToChatInput(aiResult.summary);
+                if (actionType === 'check' && execSlash) {
+                    await execSlash('/roll d1');
+                }
+                
                 if (aiResult.details) {
                     if (fnInjectPrompts) {
                         const safeDetails = aiResult.details.replace(/\n/g, ' ');
@@ -561,7 +566,6 @@ ${liuyaoData}
                     } else {
                         const safeDetails = aiResult.details.replace(/\|/g, ' ').replace(/\n/g, ' ');
                         const injectCmd = `/inject id=bazi_rpg_inject position=chat depth=1 role=system [System Note(玄学判定,阅后即焚): ${safeDetails}]`;
-                        const execSlash = resolveApi('executeSlashCommandsWithOptions');
                         if (execSlash) {
                             await execSlash(injectCmd);
                             isBaziEventInjected = true; 
@@ -570,42 +574,35 @@ ${liuyaoData}
                 }
             } else {
                 try {
-                    // 🌟 终极修复：彻底抛弃坑人的插件API，使用酒馆原生内存注入 + 原生存档机制
-                    if (typeof window.this_chid !== 'undefined' && window.characters && window.characters[window.this_chid]) {
+                    // 🌟 第三步修复：使用角色真实姓名传入 updateCharacterWith
+                    const fnUpdateCharacterWith = resolveApi('updateCharacterWith');
+                    const fnGetCurrentCharacterName = resolveApi('getCurrentCharacterName');
+                    
+                    if (fnUpdateCharacterWith && fnGetCurrentCharacterName) {
+                        const targetCharName = fnGetCurrentCharacterName();
+                        if (!targetCharName) {
+                            toastr.error("未检测到当前选中的角色，请先打开一个聊天框！");
+                            return;
+                        }
                         
-                        let char = window.characters[window.this_chid];
                         const bondMarker = "【八字姻缘】：";
                         const newBondText = `${bondMarker}${aiResult.summary}`;
                         
-                        // 修改内存中的描述
-                        if (char.description.includes(bondMarker)) {
-                            char.description = char.description.replace(new RegExp("【八字姻缘】：.*"), newBondText);
-                        } else {
-                            char.description += `\n${newBondText}`;
-                        }
-                        
-                        // 如果右侧面板正好开着，顺手帮用户把UI里的文本框也更新了
-                        if ($('#character_popup_description').length) {
-                            $('#character_popup_description').val(char.description);
-                        }
-                        
-                        // 触发酒馆原生保存机制！这和你在UI点保存是一模一样的逻辑，绝对成功！
-                        if (typeof window.saveCharacterDebounced === 'function') {
-                            window.saveCharacterDebounced();
-                            toastr.success("💘 合八字结果已【原生注入】角色卡描述中，并自动存档！");
-                        } else if (typeof window.saveCharacter === 'function') {
-                            window.saveCharacter();
-                            toastr.success("💘 合八字结果已【原生注入】角色卡描述中，并自动存档！");
-                        } else {
-                            toastr.warning("数据已写入内存，但未检测到自动存档函数，建议手动在右侧边栏保存一下。");
-                        }
-                        
+                        await fnUpdateCharacterWith(targetCharName, char => {
+                            if (char.description.includes(bondMarker)) {
+                                char.description = char.description.replace(new RegExp("【八字姻缘】：.*"), newBondText);
+                            } else {
+                                char.description += `\n${newBondText}`;
+                            }
+                            return char;
+                        });
+                        toastr.success("💘 合八字结果已成功写入角色卡描述！");
                     } else {
-                        toastr.error("未找到当前角色，请先打开一个聊天框！");
+                        toastr.warning("⚠️ 未检测到修改角色卡的助手API。");
                     }
                 } catch (charErr) {
                     console.error("写入角色卡失败:", charErr);
-                    toastr.error("❌ 写入角色卡发生异常，请检查控制台报错。");
+                    toastr.error("❌ 写入发生异常，请检查控制台报错。");
                 }
             }
         } else if (mode === 'real') {

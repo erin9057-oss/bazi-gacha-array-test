@@ -602,32 +602,91 @@ ${liuyaoData}
                         toastr.success("💘 合八字结果已成功静默写入角色卡描述！");
                     } else {
                         throw new Error("写入失败，尝试备用方案");
+        // ============= 后续动作分配 =============
+        const fnInjectPrompts = resolveApi('injectPrompts');
+        const execSlash = resolveApi('executeSlashCommandsWithOptions');
+
+        if (mode === 'rpg' && aiResult.summary) {
+            if (actionType === 'other') {
+                toastr.success("✅ 自由推演完成！结果已显示在面板中。");
+            } 
+            else if (actionType === 'check') {
+                // 【1. 剧情判定】：仅注入d1和后台阅后即焚设定，不发输入框
+                if (execSlash) {
+                    await execSlash('/roll d1');
+                }
+                
+                if (aiResult.details) {
+                    if (fnInjectPrompts) {
+                        const safeDetails = aiResult.details.replace(/\n/g, ' ');
+                        const injectResult = fnInjectPrompts([{
+                            id: "bazi_rpg_inject", position: 'in_chat', depth: 1, role: 'system',
+                            content: `[System Note(玄学判定,阅后即焚): ${safeDetails}]`, should_scan: false
+                        }], { once: false }); 
+                        if (injectResult && typeof injectResult.uninject === 'function') baziInjectUninjector = injectResult.uninject;
+                    } else {
+                        const safeDetails = aiResult.details.replace(/\|/g, ' ').replace(/\n/g, ' ');
+                        const injectCmd = `/inject id=bazi_rpg_inject position=chat depth=1 role=system [System Note(玄学判定,阅后即焚): ${safeDetails}]`;
+                        if (execSlash) {
+                            await execSlash(injectCmd);
+                            isBaziEventInjected = true; 
+                        }
+                    }
+                }
+                toastr.success("✅ 剧情判定完成！已在后台注入玄学影响。");
+            }
+            else if (actionType === 'event' || actionType === 'radar') {
+                // 【2. 随机事件 & 寻物线索】：仅注入输入框允许用户调整，不触发 d1 也不做后台注入
+                // 将总结和详情合并发给输入框，方便你手动删改
+                const inputText = `${aiResult.summary}\n${aiResult.details || ''}`.trim();
+                appendToChatInput(inputText);
+            }
+            else if (actionType === 'bond') {
+                // 【3. 八字姻缘】：写入角色卡或世界书（保持原样）
+                try {
+                    const fnUpdateCharacterWith = resolveApi('updateCharacterWith');
+                    const fnGetCurrentCharacterName = resolveApi('getCurrentCharacterName');
+                    
+                    const bondMarker = "【八字姻缘】：";
+                    const newBondText = `${bondMarker}${aiResult.summary}`;
+                    
+                    if (fnUpdateCharacterWith && fnGetCurrentCharacterName) {
+                        const targetCharName = fnGetCurrentCharacterName();
+                        if (!targetCharName) {
+                            toastr.error("未检测到当前选中的角色，请先打开一个聊天框！");
+                            return;
+                        }
+                        
+                        await fnUpdateCharacterWith(targetCharName, char => {
+                            if (char.description.includes(bondMarker)) {
+                                char.description = char.description.replace(new RegExp("【八字姻缘】：.*"), newBondText);
+                            } else {
+                                char.description += `\n${newBondText}`;
+                            }
+                            return char;
+                        }, { render: 'none' }); // 静默写入
+    
+                        toastr.success("💘 合八字结果已成功静默写入角色卡描述！");
+                    } else {
+                        throw new Error("更新角色描述出错，尝试备用方案");
                     }
                 } catch (charErr) {
-                    console.warn("写入角色卡失败，尝试写入聊天专属世界书:", charErr);
+                    console.warn("写入角色卡失败，改为写入聊天专属世界书:", charErr);
                     
-                    // 🌟 降级方案：新建世界书八字姻缘条目
                     const fnGetOrCreateChatWorldbook = resolveApi('getOrCreateChatWorldbook');
                     const fnCreateWorldbookEntries = resolveApi('createWorldbookEntries');
                     
                     if (fnGetOrCreateChatWorldbook && fnCreateWorldbookEntries) {
-                        // 获取或创建当前聊天的专属世界书
                         const wbName = await fnGetOrCreateChatWorldbook('current');
-                        
                         const bondMarker = "【八字姻缘】：";
                         const newBondText = `${bondMarker}${aiResult.summary}`;
     
-                        // 写入新条目
                         await fnCreateWorldbookEntries(wbName, [{
                             name: '八字姻缘',
                             content: newBondText,
-                            strategy: { 
-                                type: 'constant' // 设为常量（蓝灯），即始终生效，不需要关键字触发
-                            },
-                            position: { 
-                                type: 'after_character_definition' // 插入在角色设定之后
-                            }
-                        }], { render: 'none' }); // 同样禁止UI刷新
+                            strategy: { type: 'constant' },
+                            position: { type: 'after_character_definition' }
+                        }], { render: 'none' });
                         
                         toastr.success("💘 合八字结果已成功写入当前聊天的专属世界书！");
                     } else {

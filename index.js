@@ -414,7 +414,7 @@ ${liuyaoData}
             taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于八字六爻与角色世界观给出合理的玄学解读。`;
         }
 
-        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（填入一句话判定或羁绊设定）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（填入详细的情境推演细节）"\n}`;
+        userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（填入一句话判定或八字姻缘设定）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（填入详细的对应推演细节多用世外高人的语气解释为什么是这样并给出建议）"\n}`;
     }
 
     // ============= 发送请求 =============
@@ -497,19 +497,19 @@ ${liuyaoData}
             } else {
                 // 羁绊逻辑（暂时放着）
                 try {
-                    const bondMarker = "【八字玄学羁绊】：";
+                    const bondMarker = "【八字姻缘】：";
                     const newBondText = `${bondMarker}${aiResult.summary}`;
 
                     if (fnUpdateCharacterWith) {
                         await fnUpdateCharacterWith('current', char => {
                             if (char.description.includes(bondMarker)) {
-                                char.description = char.description.replace(new RegExp("【八字玄学羁绊】：.*"), newBondText);
+                                char.description = char.description.replace(new RegExp("【八字姻缘】：.*"), newBondText);
                             } else {
                                 char.description += `\n${newBondText}`;
                             }
                             return char;
                         });
-                        toastr.success("💘 姻缘羁绊已成功写入并保存至角色卡描述中！");
+                        toastr.success("💘 合八字结果已成功写入并保存至角色卡描述中！");
                     } 
                     else if (fnGetCharacter && fnReplaceCharacter) {
                         const char = await fnGetCharacter('current');
@@ -519,7 +519,7 @@ ${liuyaoData}
                             char.description += `\n${newBondText}`;
                         }
                         await fnReplaceCharacter('current', char);
-                        toastr.success("💘 姻缘羁绊已通过基础接口写入并保存至角色卡描述中！");
+                        toastr.success("💘 合八字结果已通过基础接口写入并保存至角色卡描述中！");
                     } 
                     else {
                         toastr.warning("⚠️ 写入角色卡失败：未检测到酒馆助手的修改 API。");
@@ -530,7 +530,7 @@ ${liuyaoData}
                 }
             }
         } else if (mode === 'real') {
-             toastr.success("✅ 三次元推演完成！");
+             toastr.success("✅ 现实推演完成！");
         }
 
     } catch (error) {
@@ -538,6 +538,6 @@ ${liuyaoData}
         $('#bazi_summary-content').html("⚠️ 测算失败。");
         $('#bazi_details-content').html(error.message);
     } finally {
-        $('#bazi_executeBtn').text("🙏 正式向AI发送推演").prop('disabled', false);
+        $('#bazi_executeBtn').text("🙏 正式向大师请愿").prop('disabled', false);
     }
 }

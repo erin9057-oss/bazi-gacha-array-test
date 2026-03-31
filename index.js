@@ -332,8 +332,10 @@ jQuery(async () => {
             
             entries.forEach(entry => {
                 if (!entry || !entry.content) return;
-                // 优化命名显示
-                let label = entry.comment || (entry.keys && entry.keys.length ? entry.keys.join(', ') : '未命名条目');
+                
+                // 🌟 第二步修复：修正世界书条目命名获取逻辑
+                let label = entry.name || (entry.strategy && entry.strategy.keys && entry.strategy.keys.length ? entry.strategy.keys.join(', ') : '未命名条目');
+                
                 if(label.length > 25) label = label.substring(0, 25) + '...'; 
                 const checkboxHtml = `
                     <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: normal; margin-bottom: 0; color: #1a1a1a;">
@@ -427,7 +429,7 @@ ${liuyaoData}
     else if (mode === 'rpg') {
         let charName = "未知角色", charDesc = "未抓取到设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
         try {
-            // 🌟 第二步修复：无敌版上下文抓取 (使用宏解析)
+            // 无敌版上下文抓取 (使用宏解析)
             const fnSub = resolveApi('substitudeMacros');
             if (fnSub) {
                 charName = fnSub('{{char}}');
@@ -574,9 +576,12 @@ ${liuyaoData}
                 }
             } else {
                 try {
-                    // 🌟 第三步修复：使用角色真实姓名传入 updateCharacterWith
+                    // 🌟 第三步修复：尝试静默写入角色卡，如果失败就降级为写入聊天专属世界书
                     const fnUpdateCharacterWith = resolveApi('updateCharacterWith');
                     const fnGetCurrentCharacterName = resolveApi('getCurrentCharacterName');
+                    
+                    const bondMarker = "【八字姻缘】：";
+                    const newBondText = `${bondMarker}${aiResult.summary}`;
                     
                     if (fnUpdateCharacterWith && fnGetCurrentCharacterName) {
                         const targetCharName = fnGetCurrentCharacterName();
@@ -585,9 +590,6 @@ ${liuyaoData}
                             return;
                         }
                         
-                        const bondMarker = "【八字姻缘】：";
-                        const newBondText = `${bondMarker}${aiResult.summary}`;
-                        
                         await fnUpdateCharacterWith(targetCharName, char => {
                             if (char.description.includes(bondMarker)) {
                                 char.description = char.description.replace(new RegExp("【八字姻缘】：.*"), newBondText);
@@ -595,14 +597,42 @@ ${liuyaoData}
                                 char.description += `\n${newBondText}`;
                             }
                             return char;
-                        });
-                        toastr.success("💘 合八字结果已成功写入角色卡描述！");
+                        }, { render: 'none' }); // ⬅️ 关键修复：禁止前端刷新，绕过 saving 锁
+    
+                        toastr.success("💘 合八字结果已成功静默写入角色卡描述！");
                     } else {
-                        toastr.warning("⚠️ 未检测到修改角色卡的助手API。");
+                        throw new Error("写入失败，尝试备用方案");
                     }
                 } catch (charErr) {
-                    console.error("写入角色卡失败:", charErr);
-                    toastr.error("❌ 写入发生异常，请检查控制台报错。");
+                    console.warn("写入角色卡失败，尝试写入聊天专属世界书:", charErr);
+                    
+                    // 🌟 降级方案：新建世界书八字姻缘条目
+                    const fnGetOrCreateChatWorldbook = resolveApi('getOrCreateChatWorldbook');
+                    const fnCreateWorldbookEntries = resolveApi('createWorldbookEntries');
+                    
+                    if (fnGetOrCreateChatWorldbook && fnCreateWorldbookEntries) {
+                        // 获取或创建当前聊天的专属世界书
+                        const wbName = await fnGetOrCreateChatWorldbook('current');
+                        
+                        const bondMarker = "【八字姻缘】：";
+                        const newBondText = `${bondMarker}${aiResult.summary}`;
+    
+                        // 写入新条目
+                        await fnCreateWorldbookEntries(wbName, [{
+                            name: '八字姻缘',
+                            content: newBondText,
+                            strategy: { 
+                                type: 'constant' // 设为常量（蓝灯），即始终生效，不需要关键字触发
+                            },
+                            position: { 
+                                type: 'after_character_definition' // 插入在角色设定之后
+                            }
+                        }], { render: 'none' }); // 同样禁止UI刷新
+                        
+                        toastr.success("💘 合八字结果已成功写入当前聊天的专属世界书！");
+                    } else {
+                        toastr.error("❌ 写入角色卡和世界书均失败，请检查控制台报错。");
+                    }
                 }
             }
         } else if (mode === 'real') {

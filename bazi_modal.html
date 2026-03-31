@@ -1,16 +1,15 @@
-<div id="bazi_modal_container" style="display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center; backdrop-filter: blur(3px);">
+<div id="bazi_modal_container" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center; backdrop-filter: blur(3px);">
     <div class="bazi-modal-wrapper" style="position: relative; width: 90%; max-width: 800px; height: 85vh; display: flex; flex-direction: column; border-radius: 10px; padding: 20px;">
         
         <div id="bazi_modal_close" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:24px; color:var(--SmartThemeBodyColor, #fff); z-index: 10; opacity: 0.8;">✖</div>
-        <!-- 标题也改成了低调的水墨金 -->
-        <h2 style="text-align: center; color: #b59865; margin-top: 0; border-bottom: 1px solid var(--SmartThemeQuoteColor, rgba(181, 152, 101, 0.3)); padding-bottom: 10px;">🔮 赛博排盘系统</h2>
+        <h2 style="text-align: center; color: #d4af37; margin-top: 0;">🔮 赛博排盘系统</h2>
         
         <!-- Tab 导航栏 -->
         <div class="bazi-tabs-nav">
             <button class="bazi-tab-btn active" data-tab="tab-api">⚙️ 接口配置</button>
-            <button class="bazi-tab-btn" data-tab="tab-real">🌍 现实气运</button>
-            <button class="bazi-tab-btn" data-tab="tab-rpg">🌌 角色卡推演</button>
-            <button class="bazi-tab-btn" data-tab="tab-gua" id="tab_btn_gua">☯️ 起卦结果</button>
+            <button class="bazi-tab-btn" data-tab="tab-real">🌍 现实气运推演</button>
+            <button class="bazi-tab-btn" data-tab="tab-rpg">🌌 角色卡相关推演</button>
+            <button class="bazi-tab-btn" data-tab="tab-gua" id="tab_btn_gua">☯️ 起卦与结果</button>
         </div>
 
         <!-- 滚动内容区 -->
@@ -23,13 +22,14 @@
                     <input id="bazi_use_st_api" type="checkbox" checked style="width: 18px; height: 18px; margin: 0;" />
                     <span>使用酒馆当前主 API (推荐，勾选后无需填写下方独立配置)</span>
                 </label>
-                <div class="api-config" id="bazi_custom_api_block" style="display: none; background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.1)); padding: 15px; border-radius: 8px;">
+                <div class="api-config" id="bazi_custom_api_block" style="display: none; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
                     <div class="input-group"><label>API 接口地址:</label><input type="text" id="bazi_apiUrl" placeholder="例如: https://api.openai.com/v1/chat/completions"></div>
                     <div class="input-group"><label>API Key:</label><input type="password" id="bazi_apiKey" placeholder="sk-..."></div>
                     <div class="input-group">
                         <label>模型 (Model):</label>
                         <select id="bazi_modelInput">
                             <option value="deepseek-v4-lite-web-chat">deepseek-v4-lite-web-chat</option>
+                            <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                             <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
                             <option value="gemini-2.5-pro">gemini-2.5-pro</option>
                             <option value="gpt-4o">gpt-4o</option>
@@ -46,59 +46,59 @@
                     <div><label>阳历生日</label><input type="date" id="bazi_birthday"></div>
                 </div>
                 <div class="input-group">
-                    <label>出生地 <span id="bazi_birth-loading" style="font-size: 12px; color: #b59865;">(加载中...)</span></label>
+                    <label>出生地 <span id="bazi_birth-loading" style="font-size: 12px; color: #d4af37;">(加载中...)</span></label>
                     <div class="location-group" id="bazi_birth-group">
-                        <select class="prov"><option value="">请选择省</option></select>
-                        <select class="city"><option value="">请选择市</option></select>
-                        <select class="dist"><option value="">请选择区</option></select>
+                        <select class="prov"><option value="">请选择省份</option></select>
+                        <select class="city"><option value="">请选择城市</option></select>
+                        <select class="dist"><option value="">请选择区县</option></select>
                         <input type="text" class="other" placeholder="海外国家/详细地址">
                     </div>
                 </div>
                 <div class="input-group">
                     <label>现居住地</label>
                     <div class="location-group" id="bazi_live-group">
-                        <select class="prov"><option value="">请选择省</option></select>
-                        <select class="city"><option value="">请选择市</option></select>
-                        <select class="dist"><option value="">请选择区</option></select>
+                        <select class="prov"><option value="">请选择省份</option></select>
+                        <select class="city"><option value="">请选择城市</option></select>
+                        <select class="dist"><option value="">请选择区县</option></select>
                         <input type="text" class="other" placeholder="海外国家/详细地址">
                     </div>
                 </div>
                 <h3 class="section-title">✨ 现实心愿</h3>
                 <div class="input-group">
-                    <label>想要许什么愿望？(如抽卡、求职，注：默认用谷子摆五行阵，也可括号备注替换)</label>
-                    <textarea id="bazi_wish_real" rows="3" placeholder="例如：明天中午玩某某游戏抽卡出限定角色"></textarea>
+                    <label>想要许什么愿望？(如抽卡、求职、考试，注：因为作者个人原因默认用谷子摆五行阵，其他需求可以括号备注摆阵方式或按五行替换)</label>
+                    <textarea id="bazi_wish_real" rows="2" placeholder="例如：明天中午玩某某游戏抽卡出限定角色"></textarea>
                 </div>
+                <div class="notice">💡 提示：点击下方按钮后，将自动为您起卦并跳转至确认面板。</div>
                 <button id="bazi_sendBtn_Real" class="bazi-submit-btn">☯️ 起卦并准备推演</button>
             </div>
 
             <!-- TAB 3: 酒馆推演 -->
             <div id="tab-rpg" class="bazi-tab-content">
-                <div class="notice">
-                    🎲 <strong>修仙 GM 引擎：</strong> 将自动抓取当前聊天角色信息、设定与对话历史。<br>
-                    除【自由推演】外，结果将自动以 <strong>（追加内容）</strong> 注入输入框，或在后台暗中执行！
+                <div class="notice" style="border-color: #8b0000; background: rgba(139,0,0,0.1);">
+                    🎲 <strong>修仙 GM 引擎：</strong> 将自动抓取当前聊天角色信息、设定与最近对话历史。<br>
+                    除【自由推演】外，推演结果将自动以 <strong>（追加内容）</strong> 的形式注入聊天输入框（允许uu二次编辑）、角色描述姻缘内容或提示词内暗中执行！
                 </div>
                 <div class="input-group">
                     <label>补充需求细节 / 自由推演要求：</label>
-                    <textarea id="bazi_rpg_extra_input" rows="3" placeholder="例如：随机事件走搞笑风... / 我应该向什么方位搜查线索？"></textarea>
+                    <textarea id="bazi_rpg_extra_input" rows="2" placeholder="例如：随机事件走搞笑风类似我想趁他不注意偷走桌上的桃... / 我应该向什么方位搜查线索？"></textarea>
                 </div>
-                
-                <!-- 5行按钮，单列排布 -->
+                <div class="notice">💡 提示：点击下方对应玩法后，将自动为您起卦并跳转至确认面板。</div>
                 <div class="bazi-rpg-grid">
-                    <button class="bazi-rpg-btn btn-bond" onclick="sendRpgRequest('bond')">💘 情缘天定 (合八字算姻缘)</button>
-                    <button class="bazi-rpg-btn btn-check" onclick="sendRpgRequest('check')">🎲 剧情检定 (自动注入d1判定行动，硬核跑团专用)</button>
-                    <button class="bazi-rpg-btn btn-event" onclick="sendRpgRequest('event')">🌪️ 突发事件 (不知道怎么推剧情的时候选这个)</button>
-                    <button class="bazi-rpg-btn btn-radar" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (寻找线索/破局专用)</button>
-                    <button class="bazi-rpg-btn btn-other" onclick="sendRpgRequest('other')">🎯 自由推演 (不注入任何提示词，纯净占卜)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('bond')">💘 情缘天定 (合八字算姻缘)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('check')">🎲 剧情检定 (没什么用，爱给自己玩卡上难度，自动注入d1避免90%作弊除非打开提示词查看器硬改)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('event')">🌪️ 突发事件 (不知道怎么推剧情的时候选这个)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (悬疑类卡关选这个)</button>
+                    <button class="bazi-rpg-btn" onclick="sendRpgRequest('other')">🎯 自由推演 (不会注入任何内容到主提示词，纯消磨时间)</button>
                 </div>
             </div>
 
             <!-- TAB 4: 起卦与输出区 -->
             <div id="tab-gua" class="bazi-tab-content">
                 <div class="input-group">
-                    <!-- 两个按钮完美并排等高 -->
-                    <div class="tab4-btn-group">
-                        <button id="bazi_castBtn" class="bazi-cast-btn">🪙 抛掷铜钱 (重新起卦)</button>
-                        <button id="bazi_executeBtn" class="bazi-submit-btn">🙏 正式向AI发送推演</button>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="bazi_castBtn" class="bazi-cast-btn" style="flex: 1; margin-top: 0;">🪙 抛掷铜钱起卦 (重新起卦)</button>
+                        <button id="bazi_executeBtn" class="bazi-submit-btn" style="flex: 1; margin-top: 0; background-color: #2e8b57 !important;">🙏 正式向AI发送推演</button>
                     </div>
 
                     <div id="bazi_hexagram-display" class="hexagram-container">
@@ -127,77 +127,3 @@
         </div>
     </div>
 </div>
-                </div>
-                <div class="input-group">
-                    <label>现居住地</label>
-                    <div class="location-group" id="bazi_live-group">
-                        <select class="prov"><option value="">请选择省</option></select>
-                        <select class="city"><option value="">请选择市</option></select>
-                        <select class="dist"><option value="">请选择区</option></select>
-                        <input type="text" class="other" placeholder="海外国家/详细地址">
-                    </div>
-                </div>
-                <h3 class="section-title">✨ 现实心愿</h3>
-                <div class="input-group">
-                    <label>想要许什么愿望？(如抽卡、求职，注：默认用谷子摆五行阵，也可括号备注替换)</label>
-                    <textarea id="bazi_wish_real" rows="3" placeholder="例如：明天中午玩某某游戏抽卡出限定角色"></textarea>
-                </div>
-                <button id="bazi_sendBtn_Real" class="bazi-submit-btn">☯️ 起卦并准备推演</button>
-            </div>
-
-            <!-- TAB 3: 酒馆推演 -->
-            <div id="tab-rpg" class="bazi-tab-content">
-                <div class="notice">
-                    🎲 <strong>修仙 GM 引擎：</strong> 将自动抓取当前聊天角色信息、设定与对话历史。<br>
-                    除【自由推演】外，结果将自动以 <strong>（追加内容）</strong> 注入输入框，或在后台暗中执行！
-                </div>
-                <div class="input-group">
-                    <label>补充需求细节 / 自由推演要求：</label>
-                    <textarea id="bazi_rpg_extra_input" rows="3" placeholder="例如：随机事件走搞笑风... / 我应该向什么方位搜查线索？"></textarea>
-                </div>
-                
-                <!-- 5行按钮，单列排布 -->
-                <div class="bazi-rpg-grid">
-                    <button class="bazi-rpg-btn btn-bond" onclick="sendRpgRequest('bond')">💘 情缘天定 (合八字算姻缘)</button>
-                    <button class="bazi-rpg-btn btn-check" onclick="sendRpgRequest('check')">🎲 剧情检定 (自动注入d1判定行动，硬核跑团专用)</button>
-                    <button class="bazi-rpg-btn btn-event" onclick="sendRpgRequest('event')">🌪️ 突发事件 (不知道怎么推剧情的时候选这个)</button>
-                    <button class="bazi-rpg-btn btn-radar" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (寻找线索/破局专用)</button>
-                    <button class="bazi-rpg-btn btn-other" onclick="sendRpgRequest('other')">🎯 自由推演 (不注入任何提示词，纯净占卜)</button>
-                </div>
-            </div>
-
-            <!-- TAB 4: 起卦与输出区 -->
-            <div id="tab-gua" class="bazi-tab-content">
-                <div class="input-group">
-                    <!-- 两个按钮完美并排等高 -->
-                    <div class="tab4-btn-group">
-                        <button id="bazi_castBtn" class="bazi-cast-btn">🪙 抛掷铜钱 (重新起卦)</button>
-                        <button id="bazi_executeBtn" class="bazi-submit-btn">🙏 正式向AI发送推演</button>
-                    </div>
-
-                    <div id="bazi_hexagram-display" class="hexagram-container">
-                        <div class="hexagram-result-title" id="bazi_hexagram-title">本卦：XXX  |  变卦：XXX</div>
-                        <div id="bazi_hexagram-lines-box"></div>
-                    </div>
-                    <input type="hidden" id="bazi_liuyaoResultData">
-                </div>
-                
-                <div class="output-container">
-                    <div class="box" id="bazi_box-summary">
-                        <strong class="box-title">🌟 推演精华</strong>
-                        <div id="bazi_summary-content" class="content-area">等待起卦及发送推演...</div>
-                    </div>
-                    <div class="box" id="bazi_box-hexagram">
-                        <strong class="box-title">☯️ 卦象解析</strong>
-                        <div id="bazi_hexagram-content" class="content-area">等待起卦及发送推演...</div>
-                    </div>
-                    <div class="box" id="bazi_box-details">
-                        <strong class="box-title">📜 详细解析</strong>
-                        <div id="bazi_details-content" class="content-area">等待起卦及发送推演...</div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>                    

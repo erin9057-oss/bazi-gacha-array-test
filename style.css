@@ -101,6 +101,21 @@
 }
 .bazi-tab-btn.active span { filter: none !important; }
 
+/* 🌟 Tab 内容切换动画 */
+.bazi-tab-content { display: none; animation: fadeIn 0.3s; }
+.bazi-tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 🌟 标题与装饰 (防挤压保护) */
+.bazi-modal-wrapper .section-title {
+    border-bottom: 1px dashed rgba(181, 152, 101, 0.4); 
+    color: #B59865; /* 水墨古金色 */
+    padding-bottom: 5px; 
+    margin-top: 15px; 
+    margin-bottom: 15px; 
+    font-size: 16px; 
+    font-weight: bold;
+}
 /* =========================================
    🌟 表单输入框
 ========================================= */

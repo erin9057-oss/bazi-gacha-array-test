@@ -155,9 +155,10 @@
 .bazi-modal-wrapper .location-group { display: flex; gap: 8px; flex-wrap: nowrap; }
 .bazi-modal-wrapper .location-group select { flex: 1; min-width: 0; }
 .bazi-modal-wrapper .location-group input { flex: 1; min-width: 0; display: none; } 
-.bazi-modal-wrapper .flex-input { display: flex; gap: 10px; align-items: flex-end;}
-.bazi-modal-wrapper .flex-input > div { flex: 1; min-width: 0; }
 
+.bazi-modal-wrapper .flex-input { display: flex; gap: 10px; align-items: flex-end; }
+.bazi-modal-wrapper .flex-input > div:first-child { flex: 0 0 85px; } /* 性别框锁死 85px 宽 */
+.bazi-modal-wrapper .flex-input > div:last-child { flex: 1; min-width: 0; } /* 生日框霸占剩余全部空间 */
 /* =========================================
    🌟 RPG 交互按钮
 ========================================= */

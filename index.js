@@ -219,7 +219,7 @@ jQuery(async () => {
         return;
     }
 
-    // 阅后即焚防弹衣监听: 采用 TavernHelper 的标准化 eventOn
+    // 阅后即焚防弹衣监听
     const fnEventOn = resolveApi('eventOn');
     const evTypes = resolveApi('tavern_events');
     if (fnEventOn && evTypes) {
@@ -289,34 +289,51 @@ jQuery(async () => {
     }
     $('#bazi_executeBtn').off('click').on('click', executePendingDivination);
 
-    // 🟢 世界书多选抓取引擎
+    // 🌟 核心修复1：地毯式抓取世界书
     $('#bazi_load_wi_btn').off('click').on('click', () => {
         const $container = $('#bazi_wi_list_container');
         $container.empty(); 
         
-        if (typeof window.world_info !== 'undefined' && window.world_info.entries) {
-            const entries = Object.values(window.world_info.entries);
-            if (entries.length === 0) {
-                $container.html('<span style="font-size: 13px; color: #A6535A; text-align: center;">当前聊天没有激活的世界书条目！</span>');
-                return;
-            }
-            
-            entries.forEach(entry => {
-                let label = entry.comment || entry.key.join(', ');
-                if(label.length > 25) label = label.substring(0, 25) + '...'; 
-                
-                const checkboxHtml = `
-                    <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: normal; margin-bottom: 0; color: #1a1a1a;">
-                        <input type="checkbox" class="bazi-wi-checkbox" value="${encodeURIComponent(entry.content)}" style="width: 16px; height: 16px; margin-top: 2px; cursor: pointer;">
-                        <span style="font-size: 13px; line-height: 1.4;">${label}</span>
-                    </label>
-                `;
-                $container.append(checkboxHtml);
-            });
-            toastr.success(`✅ 成功抓取 ${entries.length} 个条目，请在下方勾选需要发送的设定！`);
-        } else {
-            $container.html('<span style="font-size: 13px; color: #A6535A; text-align: center;">⚠️ 未检测到世界书，请确保您当前正处于聊天中。</span>');
+        let entries = [];
+        
+        // 尝试1：通过 TavernHelper API
+        const fnGetWorldInfo = resolveApi('getWorldInfo');
+        if (fnGetWorldInfo) {
+            const wi = fnGetWorldInfo();
+            if (wi && wi.entries) entries = Object.values(wi.entries);
+            else if (Array.isArray(wi)) entries = wi;
         }
+        
+        // 尝试2：通过 ST 上下文
+        if (entries.length === 0 && typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) {
+            const ctx = window.SillyTavern.getContext();
+            if (ctx.worldInfo && ctx.worldInfo.entries) entries = Object.values(ctx.worldInfo.entries);
+            else if (ctx.world_info && ctx.world_info.entries) entries = Object.values(ctx.world_info.entries);
+        }
+        
+        // 尝试3：通过全局变量兜底
+        if (entries.length === 0 && typeof window.world_info !== 'undefined' && window.world_info.entries) {
+            entries = Object.values(window.world_info.entries);
+        }
+
+        if (entries.length === 0) {
+            $container.html('<span style="font-size: 13px; color: #A6535A; text-align: center;">未能抓取到世界书！请确保已绑定并在聊天界面。</span>');
+            return;
+        }
+        
+        entries.forEach(entry => {
+            let label = entry.comment || (entry.key ? entry.key.join(', ') : '未命名条目');
+            if(label.length > 25) label = label.substring(0, 25) + '...'; 
+            
+            const checkboxHtml = `
+                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: normal; margin-bottom: 0; color: #1a1a1a;">
+                    <input type="checkbox" class="bazi-wi-checkbox" value="${encodeURIComponent(entry.content)}" style="width: 16px; height: 16px; margin-top: 2px; cursor: pointer;">
+                    <span style="font-size: 13px; line-height: 1.4;">${label}</span>
+                </label>
+            `;
+            $container.append(checkboxHtml);
+        });
+        toastr.success(`✅ 成功抓取 ${entries.length} 个条目，请在下方勾选！`);
     });
 });
 
@@ -339,13 +356,12 @@ async function executePendingDivination() {
     const todayDate = new Date();
     const todayStr = `${todayDate.getFullYear()}年${todayDate.getMonth() + 1}月${todayDate.getDate()}日`;
 
-    let systemPrompt = "";
-    let userPrompt = "";
-
-    // 🌟 全局抓取生日、时辰和性别 (解决 Tab3 无法获取 Tab2 生日的问题)
     const gender = $('#bazi_gender').val() || "未知";
     const birthday = $('#bazi_birthday').val() || "未知";
     const birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "任选当天吉时";
+
+    let systemPrompt = "";
+    let userPrompt = "";
 
     // ============= Prompt 组装 =============
     if (mode === 'real') {
@@ -414,9 +430,17 @@ ${liuyaoData}
                 }
             }
 
+            // 🌟 核心修复2：多重抓取用户设定
             const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
             if (context) {
-                userDesc = context.user_persona || "普通人类";
+                userDesc = context.userPersona || context.user_persona || userDesc;
+            }
+            // 如果 API 没抓到，用原生全局变量兜底
+            if (userDesc === "普通人类" || !userDesc) {
+                if (typeof window.personas !== 'undefined' && typeof window.settings !== 'undefined') {
+                    const p = window.personas[window.settings.persona_uid];
+                    if (p) userDesc = p.description || p.persona || userDesc;
+                }
             }
         } catch (ctxErr) {
             console.warn("🔮 抓取酒馆上下文警告:", ctxErr);
@@ -424,7 +448,6 @@ ${liuyaoData}
         
         const extraInput = $('#bazi_rpg_extra_input').val().trim() || "无补充细节";
 
-        // 🌟 世界书多选追加逻辑
         let wiContextStr = "";
         const selectedWIs = [];
         $('.bazi-wi-checkbox:checked').each(function() {
@@ -455,7 +478,6 @@ ${liuyaoData}
             taskDesc = `【自由推演】：请根据用户的补充意图【${extraInput}】，严格基于八字六爻与角色世界观给出合理的玄学解读。`;
         }
 
-        // 注意：将 wiContextStr 注入到 Prompt 中
         userPrompt = `【当前时间】${todayStr}\n【角色设定】${charName}\n${charDesc}\n【用户设定】${userDesc}${wiContextStr}\n【近期记录】\n${chatHistory}\n【用户补充意图】${extraInput}\n【六爻金钱课结果】\n${liuyaoData}\n【你的GM任务】${taskDesc}\n请严格输出纯净 JSON，不要任何其他废话：\n{\n  "summary": "（根据任务填入一句话核心内容）",\n  "hexagram_interpretation": "（填入六爻卦象解读）",\n  "details": "（用世外高人的说话风格根据任务内容的不同应用调整输出人称和语气。例姻缘是用作设定补充，应为无人称罗列判词；随机事件是新任务应为GM语气发布任务等）"\n}`;
     }
 
@@ -541,11 +563,21 @@ ${liuyaoData}
                 }
             } else {
                 try {
+                    // 🌟 核心修复3：找回丢失的 currentAvatar 逻辑
+                    const currentAvatar = (typeof window.characters !== 'undefined' && typeof window.this_chid !== 'undefined' && window.characters[window.this_chid]) 
+                        ? window.characters[window.this_chid].avatar 
+                        : null;
+
+                    if (!currentAvatar) {
+                        toastr.error("❌ 无法写入：未检测到当前选中的角色，请先打开一个聊天！");
+                        return;
+                    }
+
                     const bondMarker = "【八字姻缘】：";
                     const newBondText = `${bondMarker}${aiResult.summary}`;
 
                     if (fnUpdateCharacterWith) {
-                        await fnUpdateCharacterWith('current', char => {
+                        await fnUpdateCharacterWith(currentAvatar, char => {
                             if (char.description.includes(bondMarker)) {
                                 char.description = char.description.replace(new RegExp("【八字姻缘】：.*"), newBondText);
                             } else {
@@ -556,13 +588,13 @@ ${liuyaoData}
                         toastr.success("💘 合八字结果已成功写入并保存至角色卡描述中！");
                     } 
                     else if (fnGetCharacter && fnReplaceCharacter) {
-                        const char = await fnGetCharacter('current');
+                        const char = await fnGetCharacter(currentAvatar);
                         if (char.description.includes(bondMarker)) {
-                            char.description = char.description.replace(new RegExp("【八字玄学羁绊】：.*"), newBondText);
+                            char.description = char.description.replace(new RegExp("【八字姻缘】：.*"), newBondText);
                         } else {
                             char.description += `\n${newBondText}`;
                         }
-                        await fnReplaceCharacter('current', char);
+                        await fnReplaceCharacter(currentAvatar, char);
                         toastr.success("💘 合八字结果已通过基础接口写入并保存至角色卡描述中！");
                     } 
                     else {
@@ -584,4 +616,4 @@ ${liuyaoData}
     } finally {
         $('#bazi_executeBtn').text("🙏 正式向大师请愿").prop('disabled', false);
     }
-}
+                                                    }

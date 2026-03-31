@@ -1,4 +1,4 @@
-<div id="bazi_modal_container" style="display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center; backdrop-filter: blur(3px);">
+<div id="bazi_modal_container" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center; backdrop-filter: blur(3px);">
     <div class="bazi-modal-wrapper" style="position: relative; width: 90%; max-width: 800px; height: 85vh; display: flex; flex-direction: column; border-radius: 10px; padding: 20px;">
         
         <div id="bazi_modal_close" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:24px; color:var(--SmartThemeBodyColor, #fff); z-index: 10; opacity: 0.8;">✖</div>
@@ -12,7 +12,7 @@
             <button class="bazi-tab-btn" data-tab="tab-gua" id="tab_btn_gua">☯️ 起卦与结果</button>
         </div>
 
-        <!-- 滚动内容区 (增加 overflow-x: hidden 双重保险防止内部元素撑破) -->
+        <!-- 滚动内容区 -->
         <div style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px;">
             
             <!-- TAB 1: 接口与通用设置 -->
@@ -87,7 +87,6 @@
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('check')">🎲 剧情检定 (没什么用，爱给自己玩卡上难度，自动注入d1避免90%作弊除非打开提示词查看器硬改)</button>
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('event')">🌪️ 突发事件 (不知道怎么推剧情的时候选这个)</button>
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('radar')">🧭 占卜雷达 (悬疑类卡关选这个)</button>
-                    <!-- 新增的第五个按钮，CSS 中已优化，会让它独占底下一整行 -->
                     <button class="bazi-rpg-btn" onclick="sendRpgRequest('other')">🎯 自由推演 (不会注入任何内容到主提示词，纯消磨时间)</button>
                 </div>
             </div>

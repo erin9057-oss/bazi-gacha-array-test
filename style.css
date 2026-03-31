@@ -1,6 +1,12 @@
 /* 强制阻止酒馆的 box-sizing 干扰 */
 #bazi_modal_container * { box-sizing: border-box; }
 
+/* 🌟 核心修复：防止 100vw 引发的横向溢出 */
+#bazi_modal_container {
+    max-width: 100%;
+    overflow-x: hidden !important;
+}
+
 /* 样式隔离罩 */
 .bazi-modal-wrapper { 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 

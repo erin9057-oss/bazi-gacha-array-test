@@ -83,14 +83,19 @@
                     <textarea id="bazi_rpg_extra_input" rows="2" placeholder="例如：随机事件走搞笑风类似我想趁他不注意偷走桌上的桃... / 我应该向什么方位搜查线索？"></textarea>
                 </div>
                 
-                <!-- 👇 新增：世界书多选列表 UI 👇 -->
+                <!-- 👇 终极修复：世界书先选书，再选条目 👇 -->
                 <div class="input-group">
-                    <label>📚 附加世界书条目 (可选，抓取后可自由勾选多个)</label>
-                    <button id="bazi_load_wi_btn" class="bazi-cast-btn" style="height: 40px; margin-bottom: 10px; font-size: 14px;">📥 一键抓取当前激活的世界书</button>
+                    <label>📚 附加世界书条目 (可选)</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="bazi_fetch_wi_books_btn" class="bazi-cast-btn" style="flex: 0 0 100px; height: 38px; margin: 0; padding: 0 5px; font-size: 13px;">加载全书库</button>
+                        <select id="bazi_wi_book_select" style="flex: 1; height: 38px;">
+                            <option value="">请先点击左侧加载书库...</option>
+                        </select>
+                    </div>
                     
-                    <!-- 多选列表容器 (带滚动条，融入宣纸底色) -->
+                    <!-- 多选列表容器 -->
                     <div id="bazi_wi_list_container" style="max-height: 130px; overflow-y: auto; border: 1px solid rgba(181, 152, 101, 0.4); border-radius: 4px; padding: 10px; background-color: rgba(254, 248, 236, 0.5); display: flex; flex-direction: column; gap: 8px;">
-                        <span style="font-size: 13px; color: #827869; text-align: center; font-weight: normal;">点击上方按钮抓取内存中的条目...</span>
+                        <span style="font-size: 13px; color: #827869; text-align: center; font-weight: normal;">选择世界书后，此处将显示可勾选的条目...</span>
                     </div>
                 </div>
                 <!-- 👆 新增结束 👆 -->

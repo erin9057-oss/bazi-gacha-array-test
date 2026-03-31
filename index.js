@@ -104,7 +104,7 @@ function appendToChatInput(text) {
 // ================== 省市区联动功能 ==================
 function setupLocationGroup(prefix) {
     const group = $(`#${prefix}-group`);
-    if(group.length === 0) return; // 如果UI还没加载不报错
+    if(group.length === 0) return;
     const provSelect = group.find('.prov');
     provSelect.empty().append('<option value="">请选择省份</option>');
     for (let prov in pcaData) provSelect.append(new Option(prov, prov));
@@ -181,7 +181,6 @@ function castLiuyao() {
 window.sendRpgRequest = (actionType) => prepareDivination('rpg', actionType);
 
 function prepareDivination(mode, actionType = null) {
-    // 1. 先进行表单校验
     if (mode === 'real') {
         const wish = $('#bazi_wish_real').val().trim();
         const birthday = $('#bazi_birthday').val();
@@ -192,7 +191,6 @@ function prepareDivination(mode, actionType = null) {
         if(!birthday) return toastr.warning("请选择阳历生日");
         if(!birthPlace || !livePlace) return toastr.warning("请完整填写出生地和现居地");
         
-        // 保存数据方便下次自动填充
         localStorage.setItem('bazi_gender', $('#bazi_gender').val());
         localStorage.setItem('bazi_birthday', birthday);
     } else if (mode === 'rpg') {
@@ -202,13 +200,9 @@ function prepareDivination(mode, actionType = null) {
         }
     }
 
-    // 2. 存入全局待执行任务
     pendingDivination = { mode, actionType };
-
-    // 3. 后台起卦
     castLiuyao();
 
-    // 4. 自动跳到 Tab 4
     $('.bazi-tab-btn[data-tab="tab-gua"]').click();
     toastr.success("☯️ 卦象已自动生成！请确认后点击【正式发送推演】交由大师结印。");
 }
@@ -225,15 +219,17 @@ jQuery(async () => {
         return;
     }
 
-    // 阅后即焚防弹衣监听
-    if (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) {
-        SillyTavern.eventSource.on(SillyTavern.eventTypes.GENERATION_ENDED, async () => {
+    // 阅后即焚防弹衣监听: 采用 TavernHelper 的标准化 eventOn
+    const fnEventOn = resolveApi('eventOn');
+    const evTypes = resolveApi('tavern_events');
+    if (fnEventOn && evTypes) {
+        fnEventOn(evTypes.GENERATION_ENDED, async () => {
             if (baziInjectUninjector) {
                 baziInjectUninjector(); 
                 baziInjectUninjector = null;
             }
             if (isBaziEventInjected) {
-                const execSlash = resolveApi('executeSlashCommandsWithOptions') || (typeof SillyTavern !== 'undefined' ? SillyTavern.executeSlashCommandsWithOptions : null);
+                const execSlash = resolveApi('executeSlashCommandsWithOptions');
                 if (execSlash) {
                     await execSlash('/flushinject bazi_rpg_inject');
                     isBaziEventInjected = false;
@@ -264,7 +260,6 @@ jQuery(async () => {
     if(localStorage.getItem('bazi_gender')) $('#bazi_gender').val(localStorage.getItem('bazi_gender'));
     if(localStorage.getItem('bazi_birthday')) $('#bazi_birthday').val(localStorage.getItem('bazi_birthday'));
 
-    // 🟢 加载省市区 JSON 数据
     try {
         const res = await fetch('https://cdn.jsdelivr.net/gh/modood/Administrative-divisions-of-China/dist/pca.json');
         const rawData = await res.json();
@@ -285,16 +280,11 @@ jQuery(async () => {
 
     setupLocationGroup('bazi_birth');
     setupLocationGroup('bazi_live');
-    
 
-    $('#bazi_castBtn').on('click', castLiuyao); // 这是在Tab4点击重新抛掷的按钮
-
-
+    $('#bazi_castBtn').on('click', castLiuyao); 
     $('#bazi_sendBtn_Real').text("☯️ 起卦并准备推演").off('click').on('click', () => prepareDivination('real'));
 
-
     if ($('#bazi_executeBtn').length === 0) {
-        // 将执行按钮直接加在重新起卦按钮的后面
         $('#bazi_castBtn').after('<button id="bazi_executeBtn" style="margin-left: 10px; background-color: #2e8b57; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;">🙏 正式向AI发送推演</button>');
     }
     $('#bazi_executeBtn').off('click').on('click', executePendingDivination);
@@ -375,19 +365,28 @@ ${liuyaoData}
     else if (mode === 'rpg') {
         let charName = "未知角色", charDesc = "未知角色设定", userDesc = "普通人类", chatHistory = "暂无近期对话。";
         try {
+            // 🌟 核心升级：改用酒馆助手标准的上下文抓取 API 替代旧版硬调机制
+            const fnGetCharData = resolveApi('getCharData');
+            const fnGetChatMessages = resolveApi('getChatMessages');
+            
+            if (fnGetCharData) {
+                const trueCharData = fnGetCharData('current');
+                if (trueCharData) {
+                    charName = trueCharData.name || "未知角色";
+                    charDesc = trueCharData.description || "无详细描述";
+                }
+            }
+            if (fnGetChatMessages) {
+                const msgs = fnGetChatMessages('-5', { role: 'all' });
+                if (msgs && msgs.length > 0) {
+                    // 注意：TavernHelper 的 ChatMessage 结构文本属性为 message 
+                    chatHistory = msgs.map(m => `${m.name || 'Unknown'}: ${m.message || ''}`).join('\n');
+                }
+            }
+
             const context = (typeof window.SillyTavern !== 'undefined' && window.SillyTavern.getContext) ? window.SillyTavern.getContext() : null;
             if (context) {
                 userDesc = context.user_persona || "普通人类";
-                if (typeof window.characters !== 'undefined' && typeof window.this_chid !== 'undefined') {
-                    const trueCharData = window.characters[window.this_chid];
-                    if (trueCharData) {
-                        charName = trueCharData.name || "未知角色";
-                        charDesc = trueCharData.description || "无详细描述";
-                    }
-                }
-                if (context.chat && context.chat.length > 0) {
-                    chatHistory = context.chat.slice(-5).map(m => `${m.name || 'Unknown'}: ${m.mes || ''}`).join('\n');
-                }
             }
         } catch (ctxErr) {
             console.warn("🔮 抓取酒馆上下文警告:", ctxErr);
@@ -402,8 +401,11 @@ ${liuyaoData}
 第三，必须严格遵循“先观命理之大势，再决行事之进退”的固定次序（先命后卜）。\n此外，你必须：\n1. 必须输出合法、纯净的 JSON 格式！绝对不要在 JSON 里加任何 // 注释！\n2. 不要发散写小说。summary字段是你作为GM给出的推演精华。`;
         
         let taskDesc = "";
+        const birthday = $('#bazi_birthday').val() || "未知";
+        const birthTime = $('#bazi_birthTime').length ? $('#bazi_birthTime').val().trim() : "未知";
+
         if(actionType === 'bond') {
-            taskDesc = "根据【角色设定】和【用户设定】测算<user>与角色的八字（如果信息不够可以参考用户阳历生日 ${birthday} 出生时间 ${birthTime} ),推演姻缘及当前羁绊状态。请在summary中结合双方八字，本卦以及变卦，给出一句凝练、适合作为被动设定的合八字结果（例如：命理互补，金水相生，对<user>有天然的信任）。";
+            taskDesc = `根据【角色设定】和【用户设定】测算<user>与角色的八字（如果信息不够可以参考用户阳历生日 ${birthday} 出生时间 ${birthTime} ),推演姻缘及当前羁绊状态。请在summary中结合双方八字，本卦以及变卦，给出一句凝练、适合作为被动设定的合八字结果（例如：命理互补，金水相生，对<user>有天然的信任）。`;
         } else if(actionType === 'check') {
             taskDesc = `对【近期记录】中的剧情进展和【${extraInput}】的补充进行剧情检定（大成功/成功/失败/大失败），给出判定结果与玄学原因。`;
         } else if(actionType === 'event') {
@@ -425,9 +427,15 @@ ${liuyaoData}
         let aiContentString = "";
 
         if (useStApi) {
-            const context = typeof window.SillyTavern !== 'undefined' ? window.SillyTavern.getContext() : window;
-            if (context && context.generateRaw) {
-                aiContentString = await context.generateRaw({ systemPrompt: systemPrompt, prompt: userPrompt });
+            // 🌟 核心升级：采用最新版的 generateRaw 接收 ordered_prompts 的规范
+            const fnGenerateRaw = resolveApi('generateRaw');
+            if (fnGenerateRaw) {
+                aiContentString = await fnGenerateRaw({
+                    ordered_prompts: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ]
+                });
             } else {
                 throw new Error("酒馆 API 生成函数未找到，请在配置中填写自定义 API！");
             }
@@ -469,12 +477,10 @@ ${liuyaoData}
         const fnInjectPrompts = resolveApi('injectPrompts');
 
         if (mode === 'rpg' && aiResult.summary) {
-            // 🟢 针对 "其他玩法 (other)"：只展示不污染环境！
             if (actionType === 'other') {
                 toastr.success("✅ 自由推演完成！结果已显示在面板中。");
             } 
             else if (actionType !== 'bond') {
-                // 原有动作逻辑
                 appendToChatInput(aiResult.summary);
                 if (aiResult.details) {
                     if (fnInjectPrompts) {
@@ -487,7 +493,7 @@ ${liuyaoData}
                     } else {
                         const safeDetails = aiResult.details.replace(/\|/g, ' ').replace(/\n/g, ' ');
                         const injectCmd = `/inject id=bazi_rpg_inject position=chat depth=1 role=system [System Note(玄学判定,阅后即焚): ${safeDetails}]`;
-                        const execSlash = resolveApi('executeSlashCommandsWithOptions') || (typeof SillyTavern !== 'undefined' ? SillyTavern.executeSlashCommandsWithOptions : null);
+                        const execSlash = resolveApi('executeSlashCommandsWithOptions');
                         if (execSlash) {
                             await execSlash(injectCmd);
                             isBaziEventInjected = true; 
@@ -495,11 +501,11 @@ ${liuyaoData}
                     }
                 }
             } else {
-                // 羁绊逻辑（暂时放着）
                 try {
                     const bondMarker = "【八字姻缘】：";
                     const newBondText = `${bondMarker}${aiResult.summary}`;
 
+                    // 新版直接传 'current' 就行
                     if (fnUpdateCharacterWith) {
                         await fnUpdateCharacterWith('current', char => {
                             if (char.description.includes(bondMarker)) {
@@ -540,4 +546,4 @@ ${liuyaoData}
     } finally {
         $('#bazi_executeBtn').text("🙏 正式向大师请愿").prop('disabled', false);
     }
-}
+                                                                                         }

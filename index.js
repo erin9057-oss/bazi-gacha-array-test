@@ -12,7 +12,6 @@ const hexagramMap = {
     "111111":"乾为天", "000000":"坤为地", "100010":"水雷屯", "010001":"山水蒙", "111010":"水天需", "010111":"天水讼", "010000":"地水师", "000010":"水地比", "111011":"风天小畜", "110111":"天泽履", "111000":"地天泰", "000111":"天地否", "101111":"天火同人", "111101":"火天大有", "001000":"地山谦", "000100":"雷地豫", "100110":"泽雷随", "011001":"山风蛊", "110000":"地泽临", "000011":"风地观", "100101":"火雷噬嗑", "101001":"山火贲", "000001":"山地剥", "100000":"地雷复", "100111":"天雷无妄", "111001":"山天大畜", "100001":"山雷颐", "011110":"泽风大过", "010010":"坎为水", "101101":"离为火", "001110":"泽山咸", "011100":"雷风恒", "001111":"天山遁", "111100":"雷天大壮", "000101":"火地晋", "101000":"地火明夷", "101011":"风火家人", "110101":"火泽睽", "001010":"水山蹇", "010100":"雷水解", "110001":"山泽损", "100011":"风雷益", "111110":"泽天夬", "011111":"天风姤", "000110":"泽地萃", "011000":"地风升", "010110":"泽水困", "011010":"水风井", "101110":"泽火革", "011101":"火风鼎", "100100":"震为雷", "001001":"艮为山", "001011":"风山渐", "110100":"雷泽归妹", "101100":"雷火丰", "001101":"火山旅", "011011":"巽为风", "110110":"兑为泽", "010011":"风水涣", "110010":"水泽节", "110011":"风泽中孚", "001100":"雷山小过", "101010":"水火既济", "010101":"火水未济"
 };
 
-// 🟢 核心改动：全域 API 雷达扫描器 (突破作用域限制)
 function resolveApi(fnName) {
     if (typeof window !== 'undefined' && typeof window[fnName] === 'function') return window[fnName];
     if (typeof window !== 'undefined' && window.TavernHelper && typeof window.TavernHelper[fnName] === 'function') return window.TavernHelper[fnName];
@@ -88,14 +87,12 @@ jQuery(async () => {
             if (baziInjectUninjector) {
                 baziInjectUninjector(); 
                 baziInjectUninjector = null;
-                console.log("🔮 [玄学跑团] 阅后即焚触发：已通过 TavernHelper 拔除 D1 注入！");
             }
             if (isBaziEventInjected) {
                 const execSlash = resolveApi('executeSlashCommandsWithOptions') || (typeof SillyTavern !== 'undefined' ? SillyTavern.executeSlashCommandsWithOptions : null);
                 if (execSlash) {
                     await execSlash('/flushinject bazi_rpg_inject');
                     isBaziEventInjected = false;
-                    console.log("🔮 [玄学跑团] 阅后即焚触发：已通过原生宏命令拔除 D1 注入！");
                 }
             }
         });
@@ -234,7 +231,6 @@ async function executeDivination(mode, actionType = null) {
         $('#bazi_hexagram-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.hexagram_interpretation || "") : aiResult.hexagram_interpretation);
         $('#bazi_details-content').html(typeof marked !== 'undefined' ? marked.parse(aiResult.details || "") : aiResult.details);
 
-        // 🟢 获取真正的全局 API
         const fnUpdateCharacterWith = resolveApi('updateCharacterWith');
         const fnGetCharacter = resolveApi('getCharacter');
         const fnReplaceCharacter = resolveApi('replaceCharacter');
@@ -262,7 +258,6 @@ async function executeDivination(mode, actionType = null) {
                     }
                 }
             } else {
-                // 羁绊写入：扫描到了全局函数就一定能写进去！
                 try {
                     const bondMarker = "【八字玄学羁绊】：";
                     const newBondText = `${bondMarker}${aiResult.summary}`;
@@ -289,7 +284,20 @@ async function executeDivination(mode, actionType = null) {
                         toastr.success("💘 姻缘羁绊已通过基础接口写入并保存至角色卡描述中！");
                     } 
                     else {
-                        toastr.warning("⚠️ 未找到全局的写入 API (updateCharacterWith)。可能是酒馆助手版本过旧或未启用。请按 F12 检查。");
+                        // 🛑 核心改动：如果还是找不到，直接将内部所有情况用 Alert 弹窗打印出来！
+                        let debugLog = "【酒馆助手 API 追踪报告】\n\n";
+                        debugLog += "1. window.TavernHelper 是否存在？ " + (typeof window.TavernHelper !== 'undefined') + "\n";
+                        if (window.TavernHelper) {
+                            const thKeys = Object.keys(window.TavernHelper).filter(k => k.toLowerCase().includes('char'));
+                            debugLog += "2. TavernHelper 内包含的 Character 接口有：\n" + (thKeys.length ? thKeys.join(", ") : "无") + "\n";
+                        }
+                        
+                        const winKeys = Object.keys(window).filter(k => k.toLowerCase().includes('updatecharacter'));
+                        debugLog += "\n3. 全局 window 是否有 updateCharacterWith？ " + (winKeys.length > 0 ? winKeys.join(", ") : "没有找到") + "\n";
+                        
+                        debugLog += "\n4. globalThis 测试？ " + (typeof globalThis.updateCharacterWith) + "\n";
+                        
+                        alert(debugLog);
                     }
                 } catch (charErr) {
                     console.error("写入角色卡失败:", charErr);
